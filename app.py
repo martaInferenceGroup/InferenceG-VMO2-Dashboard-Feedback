@@ -740,14 +740,25 @@ elif page == "Reviewer Panel":
 
     # ─── Reviewer is authenticated ───
 
-    st.caption("Review client feedback, approve/reject comments, then send to Claude for processing.")
+    st.caption("Review client feedback, approve/reject every comment, then submit to Claude for dashboard regeneration.")
 
-    tab_feedback, tab_stories, tab_status = st.tabs(["Feedback Review", "Story Requests", "Dashboard Status"])
+    tab_feedback, tab_stories, tab_versions, tab_status = st.tabs(
+        ["Feedback Review", "Story Requests", "Version Management", "Dashboard Status"]
+    )
 
     # ─── Tab: Feedback Review ───
 
     with tab_feedback:
+        # Filter by dashboard
+        fb_dashboard = st.selectbox(
+            "Filter by dashboard",
+            ["All"] + list(DASHBOARDS.keys()),
+            key="fb_filter_dash",
+        )
+
         feedback_files = list_feedback_files()
+        if fb_dashboard != "All":
+            feedback_files = [f for f in feedback_files if f["dashboard"] == fb_dashboard]
 
         if not feedback_files:
             st.info("No feedback submitted yet. When clients submit comments on dashboards, they'll appear here.")
@@ -755,11 +766,12 @@ elif page == "Reviewer Panel":
             selected_file = st.selectbox(
                 "Select feedback to review",
                 feedback_files,
-                format_func=lambda f: f"{f['file']} — {f['reviewer']} ({f['comment_count']} comments) {'[REVIEWED]' if f['reviewed'] else ''}",
+                format_func=lambda f: f"{f['dashboard']} — {f['reviewer']} ({f['comment_count']} comments, {f['date']}) {'✅ REVIEWED' if f['reviewed'] else '⏳ PENDING'}",
             )
 
             if selected_file:
                 data = selected_file["data"]
+                dashboard_id = data.get("dashboard", "?")
                 comments = data.get("comments", [])
                 if not comments:
                     comments = [
@@ -811,6 +823,7 @@ elif page == "Reviewer Panel":
                         st.session_state[review_key] = decisions
                         st.rerun()
 
+                    # Render each comment — reviewer MUST assign an action to each
                     for i, c in enumerate(comments):
                         k = str(i)
                         d = decisions.get(k, {"status": "pending", "note": ""})
@@ -844,39 +857,105 @@ elif page == "Reviewer Panel":
                     review_path = FEEDBACK_DIR / selected_file["file"].replace(".json", "_review.json")
                     review_path.write_text(json.dumps(review_save, indent=2))
 
-                    if n_approved + n_clarified > 0:
-                        st.markdown(f"**{n_approved + n_clarified}** approved/clarified changes ready to process.")
-                        if st.button("Process Approved Changes (send to Claude)", type="primary"):
-                            filtered = {
-                                "dashboard": data.get("dashboard", ""), "version": data.get("version", ""),
-                                "reviewer": data.get("reviewer", ""), "internalReviewer": "Marta",
-                                "reviewDate": datetime.now().strftime("%Y-%m-%d"),
-                                "overall": [], "visuals": [],
-                            }
+                    # ─── Submit to Claude ─────────────────────────────────
+                    # ALL comments must have an action before submitting
+                    if n_pending > 0:
+                        st.warning(f"{n_pending} comment(s) still need an action (approve, reject, or clarify). Every comment must have a decision before submitting.")
+                    else:
+                        n_actionable = n_approved + n_clarified
+                        if n_actionable == 0:
+                            st.info("All comments were rejected. Nothing to submit to Claude.")
+                        else:
+                            st.success(f"All comments reviewed. **{n_actionable}** approved/clarified, **{n_rejected}** rejected.")
 
-                            for i, c in enumerate(comments):
-                                d = decisions.get(str(i), {})
-                                if d.get("status") in ("approved", "clarified"):
-                                    entry = {**c, "reviewStatus": d["status"], "reviewNote": d.get("note", "")}
-                                    if c["visual"] == "Overall Dashboard":
-                                        filtered["overall"].append(entry)
-                                    else:
-                                        filtered["visuals"].append(entry)
+                            if st.button("Submit to Claude for Dashboard Regeneration", type="primary"):
+                                # Build the filtered feedback with only approved/clarified items
+                                filtered = {
+                                    "dashboard": dashboard_id,
+                                    "version": data.get("version", "5.0"),
+                                    "originalReviewer": data.get("reviewer", ""),
+                                    "internalReviewer": "Reviewer",
+                                    "reviewDate": datetime.now().strftime("%Y-%m-%d"),
+                                    "overall": [],
+                                    "visuals": [],
+                                }
 
-                            fname = f"{data.get('dashboard', 'UNK')}_reviewed_{datetime.now().strftime('%Y-%m-%d')}.json"
-                            (FEEDBACK_DIR / fname).write_text(json.dumps(filtered, indent=2))
+                                for i, c in enumerate(comments):
+                                    d = decisions.get(str(i), {})
+                                    if d.get("status") in ("approved", "clarified"):
+                                        entry = {**c, "reviewStatus": d["status"], "reviewNote": d.get("note", "")}
+                                        if c["visual"] == "Overall Dashboard":
+                                            filtered["overall"].append(entry)
+                                        else:
+                                            filtered["visuals"].append(entry)
 
-                            st.success(
-                                f"Reviewed feedback saved as `{fname}`. "
-                                "To apply changes, run in Claude Code:\n\n"
-                                f'```\nProcess the reviewed feedback at feedback/{fname} following process/feedback_system.md\n```'
-                            )
+                                # Save reviewed feedback
+                                fname = f"{dashboard_id}_reviewed_{datetime.now().strftime('%Y-%m-%d_%H%M')}.json"
+                                (FEEDBACK_DIR / fname).write_text(json.dumps(filtered, indent=2))
 
-                            send_email(
-                                f"Changes Approved: {data.get('dashboard', '?')}",
-                                f"<h3>{n_approved + n_clarified} changes approved for {data.get('dashboard', '?')}</h3>"
-                                f"<p>Reviewed feedback saved as <code>{fname}</code>. Ready for Claude processing.</p>",
-                            )
+                                # Archive current dashboard version before regeneration
+                                dash_info = DASHBOARDS.get(dashboard_id)
+                                if dash_info:
+                                    current_html = PROTOTYPE_DIR / dash_info["file"]
+                                    if current_html.exists():
+                                        version = data.get("version", "5.0")
+                                        archive_name = f"{dashboard_id}_v{version}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
+                                        VERSIONS_DIR = ROOT / "versions"
+                                        VERSIONS_DIR.mkdir(exist_ok=True)
+                                        import shutil
+                                        shutil.copy2(current_html, VERSIONS_DIR / archive_name)
+
+                                # Build the Claude prompt
+                                change_summary = []
+                                for entry in filtered["overall"]:
+                                    note_text = f" (Reviewer note: {entry['reviewNote']})" if entry.get("reviewNote") else ""
+                                    change_summary.append(f"- [Overall] {entry['comment']}{note_text}")
+                                for entry in filtered["visuals"]:
+                                    note_text = f" (Reviewer note: {entry['reviewNote']})" if entry.get("reviewNote") else ""
+                                    change_summary.append(f"- [{entry.get('visual', '?')}] {entry['comment']}{note_text}")
+
+                                claude_prompt = (
+                                    f"Process the reviewed feedback for dashboard {dashboard_id}.\n\n"
+                                    f"Feedback file: feedback/{fname}\n"
+                                    f"Dashboard file: outputs/prototype/{dash_info['file'] if dash_info else dashboard_id + '.html'}\n"
+                                    f"Process rules: process/dashboard_factory.md\n"
+                                    f"Feedback system: process/feedback_system.md\n\n"
+                                    f"Approved changes ({n_actionable}):\n"
+                                    + "\n".join(change_summary) + "\n\n"
+                                    f"Rejected comments ({n_rejected}) — do NOT apply these.\n\n"
+                                    f"Instructions:\n"
+                                    f"1. Read the dashboard HTML and the feedback file\n"
+                                    f"2. Apply ONLY the approved/clarified changes listed above\n"
+                                    f"3. Follow all Dashboard Factory rules (no pie charts, info icons on every visual, etc.)\n"
+                                    f"4. Increment the version number in the dashboard\n"
+                                    f"5. Update status/{{dashboard_id}}_latest.json when done"
+                                )
+
+                                # Update status
+                                status_data = {
+                                    "dashboard": dashboard_id,
+                                    "status": "processing",
+                                    "message": f"{n_actionable} changes submitted for regeneration",
+                                    "feedbackFile": fname,
+                                    "timestamp": datetime.now().isoformat(),
+                                }
+                                (STATUS_DIR / f"{dashboard_id}_latest.json").write_text(json.dumps(status_data, indent=2))
+
+                                # Notify via Teams
+                                send_email(
+                                    f"Dashboard Regeneration: {dashboard_id} — {n_actionable} changes submitted",
+                                    f"<h2>Dashboard Regeneration Triggered</h2>"
+                                    f"<p><strong>Dashboard:</strong> {dashboard_id}</p>"
+                                    f"<p><strong>Changes:</strong> {n_actionable} approved, {n_rejected} rejected</p>"
+                                    f"<p><strong>Previous version archived.</strong></p>"
+                                    f"<hr><h3>Changes to apply:</h3>"
+                                    + "".join(f"<p>{line}</p>" for line in change_summary)
+                                    + f"<hr><p><em>Run the Claude prompt below in Claude Code to regenerate.</em></p>",
+                                )
+
+                                st.success("Submitted for regeneration. Previous version archived.")
+                                st.markdown("**Run this in Claude Code to regenerate the dashboard:**")
+                                st.code(claude_prompt, language=None)
 
     # ─── Tab: Story Requests ───
 
@@ -915,6 +994,67 @@ elif page == "Reviewer Panel":
                         )
                 except Exception:
                     pass
+
+    # ─── Tab: Version Management (reviewer only) ───
+
+    with tab_versions:
+        st.markdown("### Dashboard Versions")
+        st.caption("Previous versions are archived before each regeneration. Only reviewers can delete old versions.")
+
+        VERSIONS_DIR = ROOT / "versions"
+        VERSIONS_DIR.mkdir(exist_ok=True)
+
+        # Group by dashboard
+        version_files = sorted(VERSIONS_DIR.glob("*.html"), reverse=True)
+
+        if not version_files:
+            st.info("No archived versions yet. Versions are created automatically when a dashboard is submitted for regeneration.")
+        else:
+            # Group by dashboard ID
+            by_dashboard = {}
+            for vf in version_files:
+                did = vf.name.split("_")[0]
+                by_dashboard.setdefault(did, []).append(vf)
+
+            for did, files in sorted(by_dashboard.items()):
+                dash_title = DASHBOARDS.get(did, {}).get("title", did)
+                with st.expander(f"{did} — {dash_title} ({len(files)} versions)", expanded=False):
+                    # Show current live version
+                    current_file = PROTOTYPE_DIR / DASHBOARDS.get(did, {}).get("file", "")
+                    if current_file.exists():
+                        mod_time = datetime.fromtimestamp(current_file.stat().st_mtime)
+                        st.markdown(f"**Current live version:** last modified {mod_time.strftime('%d %b %Y, %H:%M')}")
+
+                    st.markdown("**Archived versions:**")
+                    for vf in files:
+                        col_name, col_size, col_action = st.columns([4, 1, 1])
+                        file_size = vf.stat().st_size / 1024
+                        col_name.markdown(f"`{vf.name}`")
+                        col_size.caption(f"{file_size:.0f} KB")
+                        with col_action:
+                            if st.button("Delete", key=f"del_{vf.name}", type="secondary"):
+                                vf.unlink()
+                                st.toast(f"Deleted {vf.name}")
+                                st.rerun()
+
+                    # Restore option
+                    st.markdown("---")
+                    restore_file = st.selectbox(
+                        "Restore a previous version",
+                        [None] + files,
+                        format_func=lambda f: "Select version to restore..." if f is None else f.name,
+                        key=f"restore_{did}",
+                    )
+                    if restore_file and st.button(f"Restore {restore_file.name} as live version", key=f"restore_btn_{did}"):
+                        import shutil
+                        target = PROTOTYPE_DIR / DASHBOARDS[did]["file"]
+                        # Archive current before restoring
+                        if target.exists():
+                            archive_name = f"{did}_pre_restore_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
+                            shutil.copy2(target, VERSIONS_DIR / archive_name)
+                        shutil.copy2(restore_file, target)
+                        st.success(f"Restored `{restore_file.name}` as the live version of {did}. Previous version archived.")
+                        st.rerun()
 
     # ─── Tab: Dashboard Status ───
 
