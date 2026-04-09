@@ -1,0 +1,28 @@
+SiteType,SiteArea,BSFConfig,Rental2024,Rental2025
+Greenfield,London,Min-,17000.0,18743.91
+Greenfield,London,Min,19300.0,21279.85
+Greenfield,London,Loading,19300.0,21279.85
+Greenfield,Urban,Min-,16400.0,18082.36
+Greenfield,Urban,Min,18200.0,20067.01
+Greenfield,Urban,Loading,18200.0,20067.01
+Greenfield,Rural,Min-,16000.0,17641.32
+Greenfield,Rural,Min,17800.0,19625.97
+Greenfield,Rural,Loading,17800.0,19625.97
+Rooftop,London,Min-,25800.0,28446.64
+Rooftop,London,Min,28100.0,30982.58
+Rooftop,London,Loading,28100.0,30982.58
+Rooftop,Urban,Min-,20000.0,22051.66
+Rooftop,Urban,Min,22300.0,24587.6
+Rooftop,Urban,Loading,22300.0,24587.6
+Rooftop,Rural,Min-,19500.0,21500.36
+Rooftop,Rural,Min,21700.0,23926.05
+Rooftop,Rural,Loading,21700.0,23926.05
+Street Furniture,London,Min-,7100.0,7828.34
+Street Furniture,London,Min,7100.0,7828.34
+Street Furniture,London,Loading,7100.0,7828.34
+Street Furniture,Urban,Min-,6900.0,7607.82
+Street Furniture,Urban,Min,6900.0,7607.82
+Street Furniture,Urban,Loading,6900.0,7607.82
+Street Furniture,Rural,Min-,6900.0,7607.82
+Street Furniture,Rural,Min,6900.0,7607.82
+Street Furniture,Rural,Loading,6900.0,7607.82

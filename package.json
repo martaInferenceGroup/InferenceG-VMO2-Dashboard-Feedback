@@ -1,0 +1,17 @@
+{
+  "name": "vmo2-dashboard-review",
+  "version": "1.0.0",
+  "description": "VMO2 Phase 2 Dashboard Review & Automation Server",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "nodemailer": "^6.9.8",
+    "dotenv": "^16.4.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

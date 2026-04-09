@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>US3 — Design Trend &amp; Issue Analysis</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --font-sans: system-ui, -apple-system, sans-serif;
+  --color-background-primary: #ffffff;
+  --color-background-secondary: #f8f9fa;
+  --color-background-tertiary: #f1f3f4;
+  --color-text-primary: #212121;
+  --color-text-secondary: #757575;
+  --color-border-tertiary: #e0e0e0;
+  --border-radius-lg: 8px;
+  --border-radius-md: 6px;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+.dw{font-family:var(--font-sans);background:var(--color-background-tertiary)}
+.topbar{background:#1a2d4f;padding:10px 18px;display:flex;align-items:center;justify-content:space-between;border-radius:var(--border-radius-lg) var(--border-radius-lg) 0 0}
+.topbar-title{color:#fff;font-size:14px;font-weight:500}
+.topbar-sub{color:rgba(255,255,255,.5);font-size:11px;margin-top:2px}
+.topbar-right{color:rgba(255,255,255,.45);font-size:11px}
+.krow{display:grid;gap:10px;margin-bottom:12px}
+.k5{grid-template-columns:repeat(5,minmax(0,1fr))}
+.k4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.k3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.k2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.kpi{background:var(--color-background-primary);border-radius:var(--border-radius-md);padding:11px 13px;border:0.5px solid var(--color-border-tertiary)}
+.kpi-lbl{font-size:11px;color:var(--color-text-secondary);line-height:1.3;margin-bottom:3px}
+.kpi-val{font-size:24px;font-weight:500;color:var(--color-text-primary);line-height:1}
+.kpi-sub{font-size:10px;margin-top:3px;color:var(--color-text-secondary)}
+.kpi.red .kpi-val{color:#C8102E}
+.kpi.amb .kpi-val{color:#d97706}
+.kpi.grn .kpi-val{color:#166534}
+.cg2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.cg3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.cc{background:var(--color-background-primary);border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);padding:12px;margin-bottom:0;overflow:hidden}
+.cc h4{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-secondary);margin-bottom:10px}
+.leg{display:flex;gap:12px;flex-wrap:wrap;font-size:10px;color:var(--color-text-secondary);margin-top:8px}
+.li{display:flex;align-items:center;gap:4px}
+.lsq{width:9px;height:9px;border-radius:2px}
+.lc{width:9px;height:9px;border-radius:50%}
+.fb{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--color-background-primary);padding:9px 12px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);margin-bottom:12px}
+.fb select,.fb input[type=text]{font-size:12px;padding:3px 7px;border-radius:4px;border:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary);color:var(--color-text-primary);height:26px}
+.fl{font-size:11px;color:var(--color-text-secondary)}
+.cc.full-w{margin-bottom:12px}
+.toggle-group{display:inline-flex;border-radius:4px;overflow:hidden;border:0.5px solid var(--color-border-tertiary);margin-bottom:6px}
+.toggle-group button{border:none;background:var(--color-background-secondary);color:var(--color-text-secondary);padding:3px 10px;cursor:pointer;font-size:10px;font-family:var(--font-sans)}
+.toggle-group button.active{background:#1a2d4f;color:#fff}
+.toggle-group button:hover:not(.active){background:var(--color-background-tertiary)}
+.kpi{position:relative}
+.cc{position:relative}
+.info-btn{position:absolute;top:6px;right:6px;width:18px;height:18px;border-radius:50%;background:#e8edf3;color:#5a6a7e;font-size:11px;font-weight:700;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;line-height:1}
+.info-btn:hover{background:#d0daea}
+.info-panel{display:none;position:relative;background:#f0f4fa;border:1px solid #d0daea;border-radius:4px;padding:8px 10px;margin-top:8px;font-size:10px;line-height:1.5;color:#333;z-index:4;animation:infoFadeIn .2s ease}
+.info-panel.open{display:block}
+@keyframes infoFadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+
+/* Feedback Mode Toggle */
+.fb-toggle{background:#C8102E;border:1px solid #C8102E;color:#fff;font-size:12px;padding:6px 16px;border-radius:4px;cursor:pointer;font-family:var(--font-sans);transition:all .2s;font-weight:600}
+.fb-toggle:hover{background:#a00d24;border-color:#a00d24;color:#fff}
+.fb-toggle.active{background:#d97706;border-color:#d97706;color:#fff;font-weight:600}
+
+/* Feedback bubble on visuals */
+.fb-bubble{display:none;position:absolute;top:6px;right:28px;width:20px;height:20px;border-radius:50%;background:#d97706;color:#fff;font-size:12px;border:none;cursor:pointer;align-items:center;justify-content:center;z-index:1000;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .15s}
+.fb-bubble:hover{transform:scale(1.15)}
+.fb-bubble.has-comment{background:#C8102E}
+body.feedback-mode .fb-bubble{display:flex}
+
+/* Comment count badge */
+.fb-badge{position:absolute;top:-4px;right:-4px;width:14px;height:14px;border-radius:50%;background:#C8102E;color:#fff;font-size:8px;display:flex;align-items:center;justify-content:center;font-weight:700}
+
+/* Feedback input panel */
+.fb-input-panel{display:none;position:absolute;top:32px;right:6px;width:320px;max-height:400px;overflow-y:auto;background:#fff;border:1px solid #e0e0e0;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.15);z-index:1001;padding:10px;font-size:11px}
+.fb-input-panel.open{display:block}
+.fb-input-panel textarea{width:100%;border:1px solid #e0e0e0;border-radius:4px;padding:6px 8px;font-size:11px;font-family:var(--font-sans);resize:vertical;min-height:60px;margin-bottom:6px}
+.fb-input-panel select{font-size:11px;padding:3px 6px;border:1px solid #e0e0e0;border-radius:4px;margin-right:6px}
+.fb-input-panel button{font-size:11px;padding:3px 10px;border-radius:4px;border:none;cursor:pointer;font-family:var(--font-sans)}
+.fb-input-panel .fb-save{background:#1a2d4f;color:#fff}
+.fb-input-panel .fb-save:hover{background:#2a4060}
+.fb-input-panel .fb-cancel{background:#f1f3f4;color:#333;margin-right:6px}
+.fb-input-panel .fb-delete{background:#fee2e2;color:#991b1b;margin-left:auto}
+
+/* Overall feedback panel */
+.fb-overall{display:none;background:#fffbeb;border:1px solid #f59e0b;border-radius:6px;padding:12px 16px;margin:0 14px 12px 14px}
+body.feedback-mode .fb-overall{display:block}
+.fb-overall h4{font-size:12px;color:#92400e;margin-bottom:8px}
+.fb-overall textarea{width:100%;border:1px solid #e0e0e0;border-radius:4px;padding:6px 8px;font-size:11px;font-family:var(--font-sans);resize:vertical;min-height:50px;margin-bottom:6px}
+.fb-overall .fb-comment-list{margin-top:8px}
+.fb-overall .fb-comment-item{background:#fff;border:1px solid #e0e0e0;border-radius:4px;padding:6px 8px;margin-bottom:4px;font-size:11px;display:flex;justify-content:space-between;align-items:start}
+.fb-overall .fb-comment-text{flex:1;margin-right:8px}
+.fb-overall .fb-comment-meta{font-size:9px;color:#757575;margin-top:2px}
+.fb-overall .fb-remove-comment{background:none;border:none;color:#991b1b;cursor:pointer;font-size:13px;padding:0 2px}
+
+/* Export bar */
+.fb-export-bar{display:none;background:#1a2d4f;padding:8px 16px;align-items:center;justify-content:space-between}
+body.feedback-mode .fb-export-bar{display:flex}
+.fb-export-bar span{color:rgba(255,255,255,.7);font-size:11px}
+.fb-export-bar .fb-count{color:#f59e0b;font-weight:600}
+.fb-export-bar button{font-size:11px;padding:4px 14px;border-radius:4px;border:none;cursor:pointer;font-family:var(--font-sans)}
+.fb-export-btn{background:#f59e0b;color:#000;font-weight:500}
+.fb-export-btn:hover{background:#d97706}
+.fb-clear-btn{background:rgba(255,255,255,.1);color:rgba(255,255,255,.7);margin-left:8px}
+.fb-clear-btn:hover{background:rgba(255,255,255,.2);color:#fff}
+
+/* Version badge */
+.version-badge{background:rgba(255,255,255,.1);color:rgba(255,255,255,.5);font-size:10px;padding:2px 8px;border-radius:3px;margin-left:10px}
+
+/* Existing comment indicator */
+.fb-existing{background:#fef3c7;border:1px solid #fde68a;border-radius:4px;padding:6px 8px;margin-top:6px;font-size:10px;color:#92400e;line-height:1.4}
+.fb-existing strong{color:#78350f}
+</style>
+</head>
+<body>
+<div class="dw">
+<!-- TOPBAR -->
+<div class="topbar">
+  <div>
+    <div class="topbar-title">Design Trend &amp; Issue Analysis — Operations Dashboard</div>
+    <div class="topbar-sub">VMO2 · Network Design &amp; Build · Q1 2026</div>
+  </div>
+  <div class="topbar-right">Updated weekly · Last refresh 21 Mar 2026 09:15
+    <button class="fb-toggle" onclick="toggleFeedbackMode()">💬 Feedback</button>
+    <span class="version-badge">v5.0</span>
+  </div>
+</div>
+
+<!-- Export bar -->
+<div class="fb-export-bar">
+  <span>Feedback Mode — <span class="fb-count" id="fbCount">0</span> comments</span>
+  <div>
+    <button class="fb-export-btn" onclick="exportFeedback()">📋 Submit Feedback</button>
+    <button class="fb-clear-btn" onclick="clearAllFeedback()">Clear All</button>
+  </div>
+</div>
+
+<!-- ======================== MSV & Rework Overview ======================== -->
+<div style="padding:14px;background:var(--color-background-secondary)" data-tab="MSV & Rework Overview">
+  <!-- Filter bar -->
+  <div class="fb">
+    <span class="fl">Date range</span>
+    <select><option>Last 30 days</option><option>Last 90 days</option><option selected>Q1 2026</option><option>Q4 2025</option></select>
+    <span class="fl">Region</span>
+    <select><option>All</option><option>UK - London</option><option>UK - West</option><option>UK - South</option><option>UK - North</option></select>
+    <span class="fl">Design supplier</span>
+    <select><option>All</option><option>Nokia</option><option>Ericsson</option></select>
+    <span class="fl">Supplier</span>
+    <select><option>All</option><option>Circet</option><option>Clarke Telecom</option><option>WHP</option><option>Cornerstone</option><option>ICS</option><option>O2</option><option>8point8</option><option>United Living</option></select>
+    <span class="fl">Site type</span>
+    <select><option>All</option><option>Greenfield</option><option>Rooftop</option><option>Street Furniture</option></select>
+  </div>
+
+  <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;padding:12px 18px;margin:0 14px 14px 14px;text-align:center">
+    <div style="font-weight:600;font-size:13px;color:#92400e;margin-bottom:4px">⚠️ FUTURE-STATE PROTOTYPE — NO LIVE DATA</div>
+    <div style="font-size:11px;color:#78350f;line-height:1.5">
+      All metrics shown use illustrative data only. This dashboard represents the target state for design trend analysis.<br>
+      <strong>Prerequisites for activation:</strong> (1) SiteFlo integration — MSV pass/fail export &nbsp;|&nbsp; (2) Defect/issue categorisation system &nbsp;|&nbsp; (3) Workflow milestone timestamps<br>
+      <em>Status: Awaiting data source confirmation</em>
+    </div>
+  </div>
+
+  <!-- Overall feedback panel -->
+  <div class="fb-overall" id="fbOverall">
+    <h4>💬 Overall Dashboard Feedback</h4>
+    <div style="display:flex;gap:6px;align-items:end">
+      <div style="flex:1">
+        <textarea id="fbOverallInput" placeholder="Add overall feedback about this dashboard..."></textarea>
+        <div style="display:flex;align-items:center">
+          <select id="fbOverallPriority">
+            <option value="high">🔴 High</option>
+            <option value="medium" selected>🟡 Medium</option>
+            <option value="low">🟢 Low</option>
+          </select>
+          <button class="fb-save" onclick="addOverallComment()">Add Comment</button>
+        </div>
+      </div>
+    </div>
+    <div class="fb-comment-list" id="fbOverallComments"></div>
+  </div>
+
+  <!-- KPI Row 1 -->
+  <div class="krow k5">
+    <div class="kpi red" data-visual-id="kpi-msv-rate" data-visual-name="MSV Failure Rate"><button class="info-btn" onclick="toggleInfo(this)">&#8505;</button><div class="info-panel">Percentage of designs failing MSV (Main Structural Verification). &#9888;&#65039; No live data &mdash; stakeholder confirmed this is purely anecdotal. Requires SiteFlo MSV pass/fail export to activate. Drives: design quality baseline (when data available).</div><div class="kpi-lbl">MSV failure rate</div><div class="kpi-val">49.3%</div><div class="kpi-sub">of submitted designs</div></div>
+    <div class="kpi amb" data-visual-id="kpi-rework-rate" data-visual-name="Rework Rate"><button class="info-btn" onclick="toggleInfo(this)">&#8505;</button><div class="info-panel">Percentage of designs sent back for correction. &#9888;&#65039; No live data &mdash; requires rework tracking system integration. Drives: quality improvement targeting (when data available).</div><div class="kpi-lbl">Rework rate</div><div class="kpi-val">22.7%</div><div class="kpi-sub">of submitted designs</div></div>
+    <div class="kpi amb" data-visual-id="kpi-cycle-time" data-visual-name="Avg Design Cycle Time"><button class="info-btn" onclick="toggleInfo(this)">&#8505;</button><div class="info-panel">Average days from design submission to approval. Target: 10 days. &#9888;&#65039; No live data &mdash; requires workflow milestone timestamps from SiteFlo. Drives: process efficiency monitoring (when data available).</div><div class="kpi-lbl">Avg design cycle time</div><div class="kpi-val">14.2 days</div><div class="kpi-sub">Target: 10 days</div></div>
+    <div class="kpi" data-visual-id="kpi-total-submitted" data-visual-name="Total Designs Submitted"><button class="info-btn" onclick="toggleInfo(this)">&#8505;</button><div class="info-panel">Volume of designs submitted in the period. &#9888;&#65039; Illustrative value &mdash; real count would come from document ingestion pipeline. Drives: workload planning and capacity allocation.</div><div class="kpi-lbl">Total designs submitted</div><div class="kpi-val">1,847</div><div class="kpi-sub">Q1 2026</div></div>
+    <div class="kpi red" data-visual-id="kpi-requiring-rework" data-visual-name="Designs Requiring Rework"><button class="info-btn" onclick="toggleInfo(this)">&#8505;</button><div class="info-panel">Count of designs sent back for correction in the period. &#9888;&#65039; No live data. Drives: rework burden quantification and root cause prioritisation.</div><div class="kpi-lbl">Designs requiring rework</div><div class="kpi-val">419</div><div class="kpi-sub">This period</div></div>
+  </div>
+
+  <!-- KPI Row 2 -->
+  <div class="krow k2">
+    <div class="kpi amb" data-visual-id="kpi-delay-days" data-visual-name="Avg Delay Days"><button class="info-btn" onclick="toggleInfo(this)">&#8505;</button><div class="info-panel">Average additional days added per rework cycle. &#9888;&#65039; No live data &mdash; requires defect tracking with timestamps. Drives: delay reduction targeting.</div><div class="kpi-lbl">Avg delay days</div><div class="kpi-val">6.4</div><div class="kpi-sub">Per rework cycle</div></div>
+    <div class="kpi amb" data-visual-id="kpi-first-pass" data-visual-name="First-Pass Approval Rate"><button class="info-btn" onclick="toggleInfo(this)">&#8505;</button><div class="info-panel">Percentage of designs approved on first submission without rework. Target: 60%. &#9888;&#65039; No live data. Drives: design quality improvement &mdash; higher first-pass rate means less rework cost.</div><div class="kpi-lbl">First-pass approval rate</div><div class="kpi-val">50.7%</div><div class="kpi-sub">Target: 60%</div></div>
+  </div>
+
+  <!-- Charts Row 1 -->
+  <div class="cg2">
+    <div class="cc" data-visual-id="chart-msv-trend" data-visual-name="MSV Failure Rate Trend"><button class="info-btn" onclick="toggleInfo(this)">&#8505;</button><div class="info-panel">Tracks MSV failure rate over time. &#9888;&#65039; All data is illustrative. When activated, this will show whether design quality is improving or degrading week-over-week. Drives: trend-based intervention decisions.</div><h4>MSV failure rate — 12-week trend</h4><div style="font-size:10px;color:var(--color-text-secondary);margin-top:-6px;margin-bottom:8px">Tracks design quality over time</div>
+      <div class="toggle-group" id="tg_msv_trend">
+        <button class="active" onclick="toggleView('c_msv_trend','weekly',this)">Weekly</button>
+        <button onclick="toggleView('c_msv_trend','monthly',this)">Monthly</button>
+        <button onclick="toggleView('c_msv_trend','quarterly',this)">Quarterly</button>
+      </div>
+      <div style="position:relative;height:220px;overflow:hidden"><canvas id="c_msv_trend"></canvas></div>
+      <div class="leg"><div class="li"><div class="lsq" style="background:#C8102E"></div>MSV failure rate</div></div>
+    </div>
+    <div class="cc" data-visual-id="chart-rework-trend" data-visual-name="Rework Rate Trend"><button class="info-btn" onclick="toggleInfo(this)">&#8505;</button><div class="info-panel">Tracks proportion of designs requiring correction over time. &#9888;&#65039; All data is illustrative. Drives: identifying whether process improvements are reducing rework.</div><h4>Rework rate trend</h4><div style="font-size:10px;color:var(--color-text-secondary);margin-top:-6px;margin-bottom:8px">Proportion of designs sent back for correction</div>
+      <div class="toggle-group" id="tg_rework_trend">
+        <button class="active" onclick="toggleView('c_rework_trend','weekly',this)">Weekly</button>
+        <button onclick="toggleView('c_rework_trend','monthly',this)">Monthly</button>
+        <button onclick="toggleView('c_rework_trend','quarterly',this)">Quarterly</button>
+      </div>
+      <div style="position:relative;height:220px;overflow:hidden"><canvas id="c_rework_trend"></canvas></div>
+      <div class="leg"><div class="li"><div class="lsq" style="background:#2a5f8f"></div>Rework rate</div><div class="li"><div class="lsq" style="background:rgba(42,95,143,0.15)"></div>Confidence band</div></div>
+    </div>
+  </div>
+
+  <!-- Full-width Delay by issue category -->
+  <div class="cc full-w" style="margin-bottom:12px" data-visual-id="chart-delay-category" data-visual-name="Delay Days by Issue Category"><button class="info-btn" onclick="toggleInfo(this)">&#8505;</button><div class="info-panel">Shows which issue categories cause the most delay. &#9888;&#65039; All data is illustrative &mdash; requires defect/issue categorisation system. Drives: prioritising which issue types to address first for maximum delay reduction.</div><h4>Delay days by issue category</h4><div style="font-size:10px;color:var(--color-text-secondary);margin-top:-6px;margin-bottom:8px">Prioritise categories causing the most delay</div>
+    <div class="toggle-group" id="tg_pareto_delay">
+      <button class="active" onclick="toggleView('c_pareto_delay','weekly',this)">Weekly</button>
+      <button onclick="toggleView('c_pareto_delay','monthly',this)">Monthly</button>
+      <button onclick="toggleView('c_pareto_delay','quarterly',this)">Quarterly</button>
+    </div>
+    <div style="position:relative;height:260px;overflow:hidden"><canvas id="c_pareto_delay"></canvas></div>
+    <div class="leg"><div class="li"><div class="lsq" style="background:#1a2d4f"></div>Total delay days</div></div>
+  </div>
+</div>
+
+</div><!-- end .dw -->
+
+<script>
+function toggleInfo(el){
+  const panel = el.nextElementSibling || el.parentElement.querySelector('.info-panel');
+  if(panel) panel.classList.toggle('open');
+}
+
+Chart.defaults.font.family='system-ui,-apple-system,sans-serif';
+Chart.defaults.font.size=10;
+Chart.defaults.color='#757575';
+
+const weeks=['W1','W2','W3','W4','W5','W6','W7','W8','W9','W10','W11','W12'];
+
+/* ====== Chart data store for toggle rebuild ====== */
+const chartData={
+  c_msv_trend:{
+    weekly:{labels:weeks,rate:[51,49,52,48,50,51,47,49,50,48,51,49]},
+    monthly:{labels:['Jan','Feb','Mar'],rate:[50,49.5,49.3]},
+    quarterly:{labels:['Q1 2026'],rate:[49.3]}
+  },
+  c_rework_trend:{
+    weekly:{labels:weeks,upper:[24,26,27,25,28,26,24,27,25,26,25,27],mid:[21,23,24,22,25,23,21,24,22,23,22,24],lower:[18,20,21,19,22,20,18,21,19,20,19,21]},
+    monthly:{labels:['Jan','Feb','Mar'],upper:[25.7,26.3,26.0],mid:[22.7,23.3,23.0],lower:[19.7,20.3,20.0]},
+    quarterly:{labels:['Q1 2026'],upper:[26.0],mid:[23.0],lower:[20.0]}
+  },
+  c_pareto_delay:{
+    weekly:{labels:['Missing docs','Antenna config','Power spec','Structural','RF coverage','Cabling error','Site access','Other'],vals:[486,378,264,216,185,122,88,52]},
+    monthly:{labels:['Missing docs','Antenna config','Power spec','Structural','RF coverage','Cabling error','Site access','Other'],vals:[162,126,88,72,62,41,29,17]},
+    quarterly:{labels:['Missing docs','Antenna config','Power spec','Structural','RF coverage','Cabling error','Site access','Other'],vals:[486,378,264,216,185,122,88,52]}
+  }
+};
+
+/* Chart instance registry */
+const chartInstances={};
+
+function buildMsvTrend(mode){
+  const d=chartData.c_msv_trend[mode];
+  const ctx=document.getElementById('c_msv_trend');
+  if(chartInstances.c_msv_trend) chartInstances.c_msv_trend.destroy();
+  chartInstances.c_msv_trend=new Chart(ctx,{type:'line',data:{labels:d.labels,datasets:[
+    {label:'MSV failure rate',data:d.rate,borderColor:'#C8102E',backgroundColor:'rgba(200,16,46,0.08)',fill:true,tension:0.3,pointRadius:3,pointBackgroundColor:'#C8102E'},
+  ]},options:{maintainAspectRatio:false,scales:{y:{beginAtZero:false,min:30,max:60,ticks:{callback:v=>v+'%'}},x:{grid:{display:false}}},plugins:{legend:{display:false}}}});
+}
+
+function buildReworkTrend(mode){
+  const d=chartData.c_rework_trend[mode];
+  const ctx=document.getElementById('c_rework_trend');
+  if(chartInstances.c_rework_trend) chartInstances.c_rework_trend.destroy();
+  chartInstances.c_rework_trend=new Chart(ctx,{type:'line',data:{labels:d.labels,datasets:[
+    {label:'Upper',data:d.upper,borderColor:'transparent',backgroundColor:'rgba(42,95,143,0.1)',fill:'+1',pointRadius:0},
+    {label:'Rework rate',data:d.mid,borderColor:'#2a5f8f',backgroundColor:'rgba(42,95,143,0.15)',fill:false,tension:0.3,pointRadius:3,pointBackgroundColor:'#2a5f8f'},
+    {label:'Lower',data:d.lower,borderColor:'transparent',backgroundColor:'rgba(42,95,143,0.1)',fill:'-1',pointRadius:0}
+  ]},options:{maintainAspectRatio:false,scales:{y:{beginAtZero:false,min:10,max:35,ticks:{callback:v=>v+'%'}},x:{grid:{display:false}}},plugins:{legend:{display:false}}}});
+}
+
+function buildParetoDelay(mode){
+  const d=chartData.c_pareto_delay[mode];
+  const ctx=document.getElementById('c_pareto_delay');
+  if(chartInstances.c_pareto_delay) chartInstances.c_pareto_delay.destroy();
+  chartInstances.c_pareto_delay=new Chart(ctx,{type:'bar',data:{labels:d.labels,datasets:[
+    {label:'Delay days',data:d.vals,backgroundColor:'#1a2d4f',borderRadius:3}
+  ]},options:{maintainAspectRatio:false,scales:{y:{beginAtZero:true,position:'left'},x:{grid:{display:false}}},plugins:{legend:{display:false}}}});
+}
+
+function toggleView(chartId,mode,btn){
+  // Update active button
+  btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  // Rebuild chart
+  if(chartId==='c_msv_trend') buildMsvTrend(mode);
+  else if(chartId==='c_rework_trend') buildReworkTrend(mode);
+  else if(chartId==='c_pareto_delay') buildParetoDelay(mode);
+}
+
+/* ====== Initial chart builds ====== */
+buildMsvTrend('weekly');
+buildReworkTrend('weekly');
+buildParetoDelay('weekly');
+
+// ===== FEEDBACK SYSTEM =====
+
+const DASHBOARD_ID = 'US3';
+const DASHBOARD_VERSION = '5.0';
+const FEEDBACK_EMAIL = 'marta@inferencegroup.com';
+
+// Feedback data store
+let feedbackData = {
+  dashboard: DASHBOARD_ID,
+  version: DASHBOARD_VERSION,
+  reviewer: '',
+  date: new Date().toISOString().split('T')[0],
+  overall: [],
+  visuals: []
+};
+
+// Load saved feedback from localStorage
+function loadFeedback(){
+  const saved = localStorage.getItem('fb_' + DASHBOARD_ID);
+  if(saved){
+    try{ feedbackData = JSON.parse(saved); } catch(e){}
+  }
+  renderOverallComments();
+  updateBubbles();
+  updateCount();
+}
+
+// Save feedback to localStorage
+function saveFeedback(){
+  localStorage.setItem('fb_' + DASHBOARD_ID, JSON.stringify(feedbackData));
+  updateCount();
+}
+
+// Toggle feedback mode
+function toggleFeedbackMode(){
+  document.body.classList.toggle('feedback-mode');
+  const btn = document.querySelector('.fb-toggle');
+  btn.classList.toggle('active');
+  btn.textContent = document.body.classList.contains('feedback-mode') ? '✕ Exit Feedback' : '💬 Feedback';
+}
+
+// Add feedback bubble to all visuals with data-visual-id
+function initFeedbackBubbles(){
+  document.querySelectorAll('[data-visual-id]').forEach(el => {
+    if(el.querySelector('.fb-bubble')) return;
+    el.style.position = 'relative';
+
+    const bubble = document.createElement('button');
+    bubble.className = 'fb-bubble';
+    bubble.innerHTML = '💬';
+    bubble.title = 'Add feedback for: ' + (el.dataset.visualName || el.dataset.visualId);
+    bubble.onclick = function(e){
+      e.stopPropagation();
+      openFeedbackPanel(el);
+    };
+    el.appendChild(bubble);
+  });
+}
+
+// Open feedback input panel for a visual
+function openFeedbackPanel(el){
+  document.querySelectorAll('.fb-input-panel.open').forEach(p => p.classList.remove('open'));
+
+  let panel = el.querySelector('.fb-input-panel');
+  if(!panel){
+    panel = document.createElement('div');
+    panel.className = 'fb-input-panel';
+
+    const vid = el.dataset.visualId;
+    const vname = el.dataset.visualName || vid;
+    const tab = el.closest('[data-tab]')?.dataset.tab || 'Unknown';
+
+    const existing = feedbackData.visuals.filter(v => v.id === vid);
+    let existingHtml = '';
+    if(existing.length > 0){
+      existingHtml = '<div class="fb-existing"><strong>Existing comments:</strong><br>' +
+        existing.map((c,i) => `• [${c.priority}] ${c.type}: ${c.comment} <button class="fb-remove-comment" onclick="removeVisualComment('${vid}',${i},'${tab}');this.closest('.fb-input-panel').classList.remove('open')">✕</button>`).join('<br>') +
+        '</div>';
+    }
+
+    panel.innerHTML = `
+      <div style="font-weight:600;margin-bottom:6px;font-size:12px">${vname}</div>
+      <div style="color:#757575;margin-bottom:6px">Tab: ${tab}</div>
+      ${existingHtml}
+      <textarea id="fbInput_${vid}" placeholder="What should change about this visual?"></textarea>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <select id="fbType_${vid}">
+          <option value="change">✏️ Change</option>
+          <option value="remove">🗑️ Remove</option>
+          <option value="add">➕ Add new</option>
+          <option value="question">❓ Question</option>
+          <option value="approve">✅ Approve</option>
+        </select>
+        <select id="fbPriority_${vid}">
+          <option value="high">🔴 High</option>
+          <option value="medium" selected>🟡 Medium</option>
+          <option value="low">🟢 Low</option>
+        </select>
+        <button class="fb-cancel" onclick="this.closest('.fb-input-panel').classList.remove('open')">Cancel</button>
+        <button class="fb-save" onclick="saveVisualComment('${vid}','${vname}','${tab}')">Save</button>
+      </div>
+    `;
+    el.appendChild(panel);
+  } else {
+    const vid = el.dataset.visualId;
+    const existing = feedbackData.visuals.filter(v => v.id === vid);
+    const existingDiv = panel.querySelector('.fb-existing');
+    if(existing.length > 0){
+      const html = '<div class="fb-existing"><strong>Existing comments:</strong><br>' +
+        existing.map((c,i) => `• [${c.priority}] ${c.type}: ${c.comment} <button class="fb-remove-comment" onclick="removeVisualComment('${vid}',${i},'${el.closest('[data-tab]')?.dataset.tab||'Unknown'}');this.closest('.fb-input-panel').classList.remove('open')">✕</button>`).join('<br>') +
+        '</div>';
+      if(existingDiv) existingDiv.outerHTML = html;
+      else panel.querySelector('textarea').insertAdjacentHTML('beforebegin', html);
+    } else if(existingDiv){
+      existingDiv.remove();
+    }
+  }
+
+  panel.classList.add('open');
+}
+
+// Save a comment on a visual
+function saveVisualComment(id, name, tab){
+  const comment = document.getElementById('fbInput_' + id)?.value.trim();
+  if(!comment) return;
+
+  feedbackData.visuals.push({
+    id: id,
+    name: name,
+    tab: tab,
+    type: document.getElementById('fbType_' + id)?.value || 'change',
+    comment: comment,
+    priority: document.getElementById('fbPriority_' + id)?.value || 'medium'
+  });
+
+  saveFeedback();
+  updateBubbles();
+
+  const input = document.getElementById('fbInput_' + id);
+  if(input) input.value = '';
+  document.querySelectorAll('.fb-input-panel.open').forEach(p => p.classList.remove('open'));
+}
+
+// Remove a visual comment
+function removeVisualComment(id, index, tab){
+  const matching = feedbackData.visuals.filter(v => v.id === id);
+  if(matching[index]){
+    const globalIndex = feedbackData.visuals.indexOf(matching[index]);
+    feedbackData.visuals.splice(globalIndex, 1);
+    saveFeedback();
+    updateBubbles();
+  }
+}
+
+// Update bubble appearance based on existing comments
+function updateBubbles(){
+  document.querySelectorAll('[data-visual-id]').forEach(el => {
+    const vid = el.dataset.visualId;
+    const bubble = el.querySelector('.fb-bubble');
+    if(!bubble) return;
+    const count = feedbackData.visuals.filter(v => v.id === vid).length;
+    bubble.classList.toggle('has-comment', count > 0);
+    const oldBadge = bubble.querySelector('.fb-badge');
+    if(oldBadge) oldBadge.remove();
+    if(count > 0){
+      const badge = document.createElement('span');
+      badge.className = 'fb-badge';
+      badge.textContent = count;
+      bubble.appendChild(badge);
+    }
+  });
+}
+
+// Add overall dashboard comment
+function addOverallComment(){
+  const input = document.getElementById('fbOverallInput');
+  const priority = document.getElementById('fbOverallPriority');
+  if(!input || !input.value.trim()) return;
+
+  feedbackData.overall.push({
+    comment: input.value.trim(),
+    priority: priority?.value || 'medium'
+  });
+
+  saveFeedback();
+  renderOverallComments();
+  input.value = '';
+}
+
+// Render overall comments list
+function renderOverallComments(){
+  const container = document.getElementById('fbOverallComments');
+  if(!container) return;
+  container.innerHTML = feedbackData.overall.map((c, i) => `
+    <div class="fb-comment-item">
+      <div>
+        <div class="fb-comment-text">${c.comment}</div>
+        <div class="fb-comment-meta">${c.priority === 'high' ? '🔴' : c.priority === 'medium' ? '🟡' : '🟢'} ${c.priority} priority</div>
+      </div>
+      <button class="fb-remove-comment" onclick="removeOverallComment(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+// Remove overall comment
+function removeOverallComment(index){
+  feedbackData.overall.splice(index, 1);
+  saveFeedback();
+  renderOverallComments();
+}
+
+// Update comment count display
+function updateCount(){
+  const el = document.getElementById('fbCount');
+  if(el) el.textContent = feedbackData.overall.length + feedbackData.visuals.length;
+}
+
+// Export feedback as JSON
+function exportFeedback(){
+  feedbackData.reviewer = prompt('Your name:') || 'Anonymous';
+  feedbackData.date = new Date().toISOString().split('T')[0];
+  const json = JSON.stringify(feedbackData, null, 2);
+  const commentCount = feedbackData.overall.length + feedbackData.visuals.length;
+
+  fetch('/api/feedback', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: json
+  })
+  .then(r => r.json())
+  .then(data => {
+    if(data.success){
+      showSubmitSuccess(commentCount, feedbackData.reviewer);
+      feedbackData.overall = [];
+      feedbackData.visuals = [];
+      saveFeedback();
+      renderOverallComments();
+      updateBubbles();
+    }
+  })
+  .catch(() => {
+    showSubmitSuccess(commentCount, feedbackData.reviewer);
+  });
+}
+
+function showSubmitSuccess(count, reviewer){
+  let modal = document.getElementById('fbFallbackModal');
+  if(modal) modal.remove();
+  modal = document.createElement('div');
+  modal.id = 'fbFallbackModal';
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:10000;display:flex;align-items:flex-start;justify-content:center;padding-top:60px';
+  modal.innerHTML =
+    '<div style="background:#fff;border-radius:12px;padding:36px;max-width:420px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.2);font-family:system-ui,sans-serif;text-align:center">' +
+    '<div style="width:56px;height:56px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px">✓</div>' +
+    '<h3 style="font-size:18px;color:#1a2d4f;margin-bottom:8px">Feedback Submitted</h3>' +
+    '<p style="font-size:13px;color:#757575;margin-bottom:6px">' + count + ' comment' + (count!==1?'s':'') + ' from <strong>' + reviewer + '</strong></p>' +
+    '<p style="font-size:12px;color:#757575;margin-bottom:24px">The team will review your comments and get back to you with any questions or updates.</p>' +
+    '<button onclick="document.getElementById(\'fbFallbackModal\').remove()" style="background:#1a2d4f;color:#fff;border:none;padding:10px 28px;border-radius:6px;cursor:pointer;font-size:13px;font-family:inherit">Done</button>' +
+    '</div>';
+  modal.onclick = function(e){ if(e.target === modal) modal.remove(); };
+  document.body.appendChild(modal);
+}
+function startStatusPolling(){
+  const poll=setInterval(()=>{
+    fetch('/api/status/'+DASHBOARD_ID).then(r=>r.json()).then(s=>{
+      if(s.status==='complete'){clearInterval(poll);showStatusBanner('success','Dashboard updated! Refresh to see changes.');
+        const b=document.getElementById('statusBanner');
+        if(b){const btn=document.createElement('button');btn.textContent='Refresh';btn.style.cssText='margin-left:12px;padding:4px 12px;border:none;border-radius:4px;background:#1a2d4f;color:#fff;cursor:pointer;font-size:11px';btn.onclick=()=>location.reload();b.appendChild(btn);}
+      }else if(s.status==='questions_pending'){clearInterval(poll);showStatusBanner('warning','Claude has clarifying questions.');loadQuestions();}
+      else if(s.status==='error'){clearInterval(poll);showStatusBanner('error','Error: '+(s.message||'Failed'));}
+    }).catch(()=>clearInterval(poll));
+  },3000);
+}
+function showStatusBanner(type,message){
+  let b=document.getElementById('statusBanner');
+  if(!b){b=document.createElement('div');b.id='statusBanner';const t=document.querySelector('.topbar');t.parentNode.insertBefore(b,t.nextSibling);}
+  const c={success:{bg:'#dcfce7',border:'#166534',text:'#166534'},warning:{bg:'#fef3c7',border:'#d97706',text:'#92400e'},error:{bg:'#fee2e2',border:'#991b1b',text:'#991b1b'},info:{bg:'#e0f2fe',border:'#0284c7',text:'#0369a1'}}[type]||{bg:'#e0f2fe',border:'#0284c7',text:'#0369a1'};
+  b.style.cssText='padding:10px 18px;font-size:12px;display:flex;align-items:center;gap:8px;background:'+c.bg+';border-bottom:2px solid '+c.border+';color:'+c.text;
+  b.innerHTML=message;
+}
+function loadQuestions(){
+  fetch('/api/questions/'+DASHBOARD_ID).then(r=>r.json()).then(d=>{
+    if(d.questions&&d.questions.length>0)showQuestionsPanel(d.questions);
+  }).catch(()=>{});
+}
+function showQuestionsPanel(questions){
+  let p=document.getElementById('questionsPanel');
+  if(!p){p=document.createElement('div');p.id='questionsPanel';p.style.cssText='background:#fffbeb;border:1px solid #f59e0b;border-radius:8px;padding:16px 20px;margin:14px;font-size:12px';
+    const ref=document.querySelector('.fb-export-bar');
+    if(ref)ref.parentNode.insertBefore(p,ref.nextSibling);
+    else document.querySelector('.topbar').after(p);
+  }
+  p.innerHTML='<h4 style="color:#92400e;margin-bottom:12px;font-size:14px">Clarifying Questions from Claude</h4>'+
+    '<p style="color:#78350f;margin-bottom:12px">Please answer these questions so changes can be applied:</p>'+
+    questions.map((q,i)=>'<div style="background:#fff;border:1px solid #e0e0e0;border-radius:6px;padding:10px;margin-bottom:8px">'+
+      '<div style="font-weight:600;margin-bottom:4px">Q'+(i+1)+': '+q.question+'</div>'+
+      (q.context?'<div style="color:#757575;font-size:11px;margin-bottom:6px">Context: '+q.context+'</div>':'')+
+      '<textarea id="answer_'+i+'" placeholder="Your answer..." style="width:100%;border:1px solid #e0e0e0;border-radius:4px;padding:6px;font-size:11px;font-family:inherit;min-height:40px;margin-top:4px"></textarea></div>').join('')+
+    '<button onclick="submitAnswers('+questions.length+')" style="background:#1a2d4f;color:#fff;border:none;padding:8px 20px;border-radius:4px;cursor:pointer;font-size:12px;margin-top:8px">Submit Answers</button>';
+}
+function submitAnswers(count){
+  const answers=[];for(let i=0;i<count;i++){const el=document.getElementById('answer_'+i);answers.push(el?el.value.trim():'');}
+  fetch('/api/answers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dashboard:DASHBOARD_ID,answers,date:new Date().toISOString().split('T')[0]})})
+  .then(r=>r.json()).then(d=>{
+    if(d.success){const p=document.getElementById('questionsPanel');if(p)p.remove();showStatusBanner('success','Answers submitted! Claude is applying changes...');startStatusPolling();}
+  }).catch(()=>showStatusBanner('error','Could not submit answers.'));
+}
+
+// Clear all feedback
+function clearAllFeedback(){
+  if(!confirm('Clear all feedback comments?')) return;
+  feedbackData.overall = [];
+  feedbackData.visuals = [];
+  saveFeedback();
+  renderOverallComments();
+  updateBubbles();
+}
+
+// Initialise on page load
+document.addEventListener('DOMContentLoaded', function(){
+  initFeedbackBubbles();
+  loadFeedback();
+  fetch('/api/questions/'+DASHBOARD_ID).then(r=>r.json()).then(d=>{
+    if(d.questions&&d.questions.length>0){document.body.classList.add('feedback-mode');
+      const btn=document.querySelector('.fb-toggle');if(btn){btn.classList.add('active');btn.textContent='Exit Feedback';}
+      showStatusBanner('warning','Claude has clarifying questions.');showQuestionsPanel(d.questions);
+    }
+  }).catch(()=>{});
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,366 @@
+<!--
+  DASHBOARD FEEDBACK COMPONENT
+  ============================
+  Inject this into any dashboard HTML file to enable in-browser feedback.
+
+  Requirements:
+  1. Add data-visual-id="unique-id" and data-visual-name="Display Name"
+     attributes to each chart card (.cc) and KPI card (.kpi)
+  2. Add data-tab="Tab Name" to each tab content div
+  3. Include this component's CSS and JS in the dashboard
+  4. Add the feedback toggle button to the topbar
+
+  Usage:
+  - Click "Feedback" button in the topbar to enter feedback mode
+  - Click the speech bubble icon on any visual to add a comment
+  - Use the overall feedback panel for dashboard-wide comments
+  - Click "Export" to copy feedback JSON to clipboard
+  - Paste into Claude Code to process changes
+-->
+
+<!-- ========== CSS — Add to dashboard <style> block ========== -->
+<style>
+/* Feedback Mode Toggle */
+.fb-toggle{background:none;border:1px solid rgba(255,255,255,.3);color:rgba(255,255,255,.7);font-size:11px;padding:4px 12px;border-radius:4px;cursor:pointer;font-family:var(--font-sans);transition:all .2s}
+.fb-toggle:hover,.fb-toggle.active{background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.5)}
+.fb-toggle.active{background:#d97706;border-color:#d97706;color:#fff}
+
+/* Feedback bubble on visuals */
+.fb-bubble{display:none;position:absolute;top:6px;right:28px;width:20px;height:20px;border-radius:50%;background:#d97706;color:#fff;font-size:12px;border:none;cursor:pointer;align-items:center;justify-content:center;z-index:10;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .15s}
+.fb-bubble:hover{transform:scale(1.15)}
+.fb-bubble.has-comment{background:#C8102E}
+body.feedback-mode .fb-bubble{display:flex}
+
+/* Comment count badge */
+.fb-badge{position:absolute;top:-4px;right:-4px;width:14px;height:14px;border-radius:50%;background:#C8102E;color:#fff;font-size:8px;display:flex;align-items:center;justify-content:center;font-weight:700}
+
+/* Feedback input panel */
+.fb-input-panel{display:none;position:absolute;top:32px;right:6px;width:320px;background:#fff;border:1px solid #e0e0e0;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.15);z-index:20;padding:10px;font-size:11px}
+.fb-input-panel.open{display:block}
+.fb-input-panel textarea{width:100%;border:1px solid #e0e0e0;border-radius:4px;padding:6px 8px;font-size:11px;font-family:var(--font-sans);resize:vertical;min-height:60px;margin-bottom:6px}
+.fb-input-panel select{font-size:11px;padding:3px 6px;border:1px solid #e0e0e0;border-radius:4px;margin-right:6px}
+.fb-input-panel button{font-size:11px;padding:3px 10px;border-radius:4px;border:none;cursor:pointer;font-family:var(--font-sans)}
+.fb-input-panel .fb-save{background:#1a2d4f;color:#fff}
+.fb-input-panel .fb-save:hover{background:#2a4060}
+.fb-input-panel .fb-cancel{background:#f1f3f4;color:#333;margin-right:6px}
+.fb-input-panel .fb-delete{background:#fee2e2;color:#991b1b;margin-left:auto}
+
+/* Overall feedback panel */
+.fb-overall{display:none;background:#fffbeb;border:1px solid #f59e0b;border-radius:6px;padding:12px 16px;margin:0 14px 12px 14px}
+body.feedback-mode .fb-overall{display:block}
+.fb-overall h4{font-size:12px;color:#92400e;margin-bottom:8px}
+.fb-overall textarea{width:100%;border:1px solid #e0e0e0;border-radius:4px;padding:6px 8px;font-size:11px;font-family:var(--font-sans);resize:vertical;min-height:50px;margin-bottom:6px}
+.fb-overall .fb-comment-list{margin-top:8px}
+.fb-overall .fb-comment-item{background:#fff;border:1px solid #e0e0e0;border-radius:4px;padding:6px 8px;margin-bottom:4px;font-size:11px;display:flex;justify-content:space-between;align-items:start}
+.fb-overall .fb-comment-text{flex:1;margin-right:8px}
+.fb-overall .fb-comment-meta{font-size:9px;color:#757575;margin-top:2px}
+.fb-overall .fb-remove-comment{background:none;border:none;color:#991b1b;cursor:pointer;font-size:13px;padding:0 2px}
+
+/* Export bar */
+.fb-export-bar{display:none;background:#1a2d4f;padding:8px 16px;align-items:center;justify-content:space-between}
+body.feedback-mode .fb-export-bar{display:flex}
+.fb-export-bar span{color:rgba(255,255,255,.7);font-size:11px}
+.fb-export-bar .fb-count{color:#f59e0b;font-weight:600}
+.fb-export-bar button{font-size:11px;padding:4px 14px;border-radius:4px;border:none;cursor:pointer;font-family:var(--font-sans)}
+.fb-export-btn{background:#f59e0b;color:#000;font-weight:500}
+.fb-export-btn:hover{background:#d97706}
+.fb-clear-btn{background:rgba(255,255,255,.1);color:rgba(255,255,255,.7);margin-left:8px}
+.fb-clear-btn:hover{background:rgba(255,255,255,.2);color:#fff}
+
+/* Version badge */
+.version-badge{background:rgba(255,255,255,.1);color:rgba(255,255,255,.5);font-size:10px;padding:2px 8px;border-radius:3px;margin-left:10px}
+
+/* Existing comment indicator */
+.fb-existing{background:#fef3c7;border:1px solid #fde68a;border-radius:4px;padding:6px 8px;margin-top:6px;font-size:10px;color:#92400e;line-height:1.4}
+.fb-existing strong{color:#78350f}
+</style>
+
+<!-- ========== HTML — Add to topbar ========== -->
+<!--
+  Add this button inside the .topbar div:
+  <button class="fb-toggle" onclick="toggleFeedbackMode()">💬 Feedback</button>
+  <span class="version-badge">v5.0</span>
+
+  Add this after the tabs bar:
+  <div class="fb-export-bar">
+    <span>Feedback Mode — <span class="fb-count" id="fbCount">0</span> comments</span>
+    <div>
+      <button class="fb-export-btn" onclick="exportFeedback()">📋 Export Feedback JSON</button>
+      <button class="fb-clear-btn" onclick="clearAllFeedback()">Clear All</button>
+    </div>
+  </div>
+
+  Add this before the first KPI row in each tab:
+  <div class="fb-overall" id="fbOverall">
+    <h4>💬 Overall Dashboard Feedback</h4>
+    <div style="display:flex;gap:6px;align-items:end">
+      <div style="flex:1">
+        <textarea id="fbOverallInput" placeholder="Add overall feedback about this dashboard..."></textarea>
+        <div style="display:flex;align-items:center">
+          <select id="fbOverallPriority">
+            <option value="high">🔴 High</option>
+            <option value="medium" selected>🟡 Medium</option>
+            <option value="low">🟢 Low</option>
+          </select>
+          <button class="fb-save" onclick="addOverallComment()">Add Comment</button>
+        </div>
+      </div>
+    </div>
+    <div class="fb-comment-list" id="fbOverallComments"></div>
+  </div>
+-->
+
+<!-- ========== JS — Add before closing </script> tag ========== -->
+<script>
+// ===== FEEDBACK SYSTEM =====
+
+const DASHBOARD_ID = 'US1'; // Change per dashboard
+const DASHBOARD_VERSION = '5.0'; // Increment on each iteration
+
+// Feedback data store
+let feedbackData = {
+  dashboard: DASHBOARD_ID,
+  version: DASHBOARD_VERSION,
+  reviewer: '',
+  date: new Date().toISOString().split('T')[0],
+  overall: [],
+  visuals: []
+};
+
+// Load saved feedback from localStorage
+function loadFeedback(){
+  const saved = localStorage.getItem('fb_' + DASHBOARD_ID);
+  if(saved){
+    try{ feedbackData = JSON.parse(saved); } catch(e){}
+  }
+  renderOverallComments();
+  updateBubbles();
+  updateCount();
+}
+
+// Save feedback to localStorage
+function saveFeedback(){
+  localStorage.setItem('fb_' + DASHBOARD_ID, JSON.stringify(feedbackData));
+  updateCount();
+}
+
+// Toggle feedback mode
+function toggleFeedbackMode(){
+  document.body.classList.toggle('feedback-mode');
+  const btn = document.querySelector('.fb-toggle');
+  btn.classList.toggle('active');
+  btn.textContent = document.body.classList.contains('feedback-mode') ? '✕ Exit Feedback' : '💬 Feedback';
+}
+
+// Add feedback bubble to all visuals with data-visual-id
+function initFeedbackBubbles(){
+  document.querySelectorAll('[data-visual-id]').forEach(el => {
+    if(el.querySelector('.fb-bubble')) return; // already has one
+    el.style.position = 'relative';
+
+    const bubble = document.createElement('button');
+    bubble.className = 'fb-bubble';
+    bubble.innerHTML = '💬';
+    bubble.title = 'Add feedback for: ' + (el.dataset.visualName || el.dataset.visualId);
+    bubble.onclick = function(e){
+      e.stopPropagation();
+      openFeedbackPanel(el);
+    };
+    el.appendChild(bubble);
+  });
+}
+
+// Open feedback input panel for a visual
+function openFeedbackPanel(el){
+  // Close any open panels
+  document.querySelectorAll('.fb-input-panel.open').forEach(p => p.classList.remove('open'));
+
+  let panel = el.querySelector('.fb-input-panel');
+  if(!panel){
+    panel = document.createElement('div');
+    panel.className = 'fb-input-panel';
+
+    const vid = el.dataset.visualId;
+    const vname = el.dataset.visualName || vid;
+    const tab = el.closest('[data-tab]')?.dataset.tab || 'Unknown';
+
+    // Check for existing comments
+    const existing = feedbackData.visuals.filter(v => v.id === vid);
+    let existingHtml = '';
+    if(existing.length > 0){
+      existingHtml = '<div class="fb-existing"><strong>Existing comments:</strong><br>' +
+        existing.map((c,i) => `• [${c.priority}] ${c.type}: ${c.comment} <button class="fb-remove-comment" onclick="removeVisualComment('${vid}',${i},'${tab}');this.closest('.fb-input-panel').classList.remove('open')">✕</button>`).join('<br>') +
+        '</div>';
+    }
+
+    panel.innerHTML = `
+      <div style="font-weight:600;margin-bottom:6px;font-size:12px">${vname}</div>
+      <div style="color:#757575;margin-bottom:6px">Tab: ${tab}</div>
+      ${existingHtml}
+      <textarea id="fbInput_${vid}" placeholder="What should change about this visual?"></textarea>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <select id="fbType_${vid}">
+          <option value="change">✏️ Change</option>
+          <option value="remove">🗑️ Remove</option>
+          <option value="add">➕ Add new</option>
+          <option value="question">❓ Question</option>
+          <option value="approve">✅ Approve</option>
+        </select>
+        <select id="fbPriority_${vid}">
+          <option value="high">🔴 High</option>
+          <option value="medium" selected>🟡 Medium</option>
+          <option value="low">🟢 Low</option>
+        </select>
+        <button class="fb-cancel" onclick="this.closest('.fb-input-panel').classList.remove('open')">Cancel</button>
+        <button class="fb-save" onclick="saveVisualComment('${vid}','${vname}','${tab}')">Save</button>
+      </div>
+    `;
+    el.appendChild(panel);
+  } else {
+    // Refresh existing comments display
+    const vid = el.dataset.visualId;
+    const existing = feedbackData.visuals.filter(v => v.id === vid);
+    const existingDiv = panel.querySelector('.fb-existing');
+    if(existing.length > 0){
+      const html = '<div class="fb-existing"><strong>Existing comments:</strong><br>' +
+        existing.map((c,i) => `• [${c.priority}] ${c.type}: ${c.comment} <button class="fb-remove-comment" onclick="removeVisualComment('${vid}',${i},'${el.closest('[data-tab]')?.dataset.tab||'Unknown'}');this.closest('.fb-input-panel').classList.remove('open')">✕</button>`).join('<br>') +
+        '</div>';
+      if(existingDiv) existingDiv.outerHTML = html;
+      else panel.querySelector('textarea').insertAdjacentHTML('beforebegin', html);
+    } else if(existingDiv){
+      existingDiv.remove();
+    }
+  }
+
+  panel.classList.add('open');
+}
+
+// Save a comment on a visual
+function saveVisualComment(id, name, tab){
+  const comment = document.getElementById('fbInput_' + id)?.value.trim();
+  if(!comment) return;
+
+  feedbackData.visuals.push({
+    id: id,
+    name: name,
+    tab: tab,
+    type: document.getElementById('fbType_' + id)?.value || 'change',
+    comment: comment,
+    priority: document.getElementById('fbPriority_' + id)?.value || 'medium'
+  });
+
+  saveFeedback();
+  updateBubbles();
+
+  // Clear input and close
+  const input = document.getElementById('fbInput_' + id);
+  if(input) input.value = '';
+  document.querySelectorAll('.fb-input-panel.open').forEach(p => p.classList.remove('open'));
+}
+
+// Remove a visual comment
+function removeVisualComment(id, index, tab){
+  const matching = feedbackData.visuals.filter(v => v.id === id);
+  if(matching[index]){
+    const globalIndex = feedbackData.visuals.indexOf(matching[index]);
+    feedbackData.visuals.splice(globalIndex, 1);
+    saveFeedback();
+    updateBubbles();
+  }
+}
+
+// Update bubble appearance based on existing comments
+function updateBubbles(){
+  document.querySelectorAll('[data-visual-id]').forEach(el => {
+    const vid = el.dataset.visualId;
+    const bubble = el.querySelector('.fb-bubble');
+    if(!bubble) return;
+    const count = feedbackData.visuals.filter(v => v.id === vid).length;
+    bubble.classList.toggle('has-comment', count > 0);
+    // Remove old badge
+    const oldBadge = bubble.querySelector('.fb-badge');
+    if(oldBadge) oldBadge.remove();
+    if(count > 0){
+      const badge = document.createElement('span');
+      badge.className = 'fb-badge';
+      badge.textContent = count;
+      bubble.appendChild(badge);
+    }
+  });
+}
+
+// Add overall dashboard comment
+function addOverallComment(){
+  const input = document.getElementById('fbOverallInput');
+  const priority = document.getElementById('fbOverallPriority');
+  if(!input || !input.value.trim()) return;
+
+  feedbackData.overall.push({
+    comment: input.value.trim(),
+    priority: priority?.value || 'medium'
+  });
+
+  saveFeedback();
+  renderOverallComments();
+  input.value = '';
+}
+
+// Render overall comments list
+function renderOverallComments(){
+  const container = document.getElementById('fbOverallComments');
+  if(!container) return;
+  container.innerHTML = feedbackData.overall.map((c, i) => `
+    <div class="fb-comment-item">
+      <div>
+        <div class="fb-comment-text">${c.comment}</div>
+        <div class="fb-comment-meta">${c.priority === 'high' ? '🔴' : c.priority === 'medium' ? '🟡' : '🟢'} ${c.priority} priority</div>
+      </div>
+      <button class="fb-remove-comment" onclick="removeOverallComment(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+// Remove overall comment
+function removeOverallComment(index){
+  feedbackData.overall.splice(index, 1);
+  saveFeedback();
+  renderOverallComments();
+}
+
+// Update comment count display
+function updateCount(){
+  const el = document.getElementById('fbCount');
+  if(el) el.textContent = feedbackData.overall.length + feedbackData.visuals.length;
+}
+
+// Export feedback as JSON
+function exportFeedback(){
+  feedbackData.reviewer = prompt('Your name (for tracking):') || 'Anonymous';
+  feedbackData.date = new Date().toISOString().split('T')[0];
+
+  const json = JSON.stringify(feedbackData, null, 2);
+  navigator.clipboard.writeText(json).then(() => {
+    alert('Feedback JSON copied to clipboard!\\n\\nPaste into Claude Code with:\\n"Process this dashboard feedback following process/feedback_system.md"');
+  }).catch(() => {
+    // Fallback: show in a textarea
+    const w = window.open('', '_blank', 'width=600,height=400');
+    w.document.write('<pre style="white-space:pre-wrap;font-size:12px">' + json + '</pre>');
+  });
+}
+
+// Clear all feedback
+function clearAllFeedback(){
+  if(!confirm('Clear all feedback comments?')) return;
+  feedbackData.overall = [];
+  feedbackData.visuals = [];
+  saveFeedback();
+  renderOverallComments();
+  updateBubbles();
+}
+
+// Initialise on page load
+document.addEventListener('DOMContentLoaded', function(){
+  initFeedbackBubbles();
+  loadFeedback();
+});
+</script>

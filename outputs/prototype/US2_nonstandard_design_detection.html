@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>US2 — Non-Standard Design Detection</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --font-sans: system-ui, -apple-system, sans-serif;
+  --color-background-primary: #ffffff;
+  --color-background-secondary: #f8f9fa;
+  --color-background-tertiary: #f1f3f4;
+  --color-text-primary: #212121;
+  --color-text-secondary: #757575;
+  --color-border-tertiary: #e0e0e0;
+  --border-radius-lg: 8px;
+  --border-radius-md: 6px;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+.dw{font-family:var(--font-sans);background:var(--color-background-tertiary)}
+.topbar{background:#1a2d4f;padding:10px 18px;display:flex;align-items:center;justify-content:space-between;border-radius:var(--border-radius-lg) var(--border-radius-lg) 0 0}
+.topbar-title{color:#fff;font-size:14px;font-weight:500}
+.topbar-sub{color:rgba(255,255,255,.5);font-size:11px;margin-top:2px}
+.topbar-right{color:rgba(255,255,255,.45);font-size:11px}
+.mock-banner{background:#fef3c7;border-bottom:1px solid #f6d888;padding:6px 16px;text-align:center;font-size:11px;color:#92400e;font-family:var(--font-sans)}
+.tabs{display:flex;background:var(--color-background-primary);border-bottom:1.5px solid var(--color-border-tertiary);padding:0 16px}
+.tab{padding:9px 16px;font-size:12px;color:var(--color-text-secondary);cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-1.5px;white-space:nowrap}
+.tab.on{color:#1a2d4f;font-weight:500;border-bottom-color:#C8102E}
+.tab:hover:not(.on){background:var(--color-background-secondary)}
+.pg{display:none;padding:14px;background:var(--color-background-secondary)}
+.pg.on{display:block}
+.fb{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--color-background-primary);padding:9px 12px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);margin-bottom:12px}
+.fb select,.fb input[type=text]{font-size:12px;padding:3px 7px;border-radius:4px;border:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary);color:var(--color-text-primary);height:26px}
+.fl{font-size:11px;color:var(--color-text-secondary)}
+.krow{display:grid;gap:10px;margin-bottom:12px}
+.k5{grid-template-columns:repeat(5,minmax(0,1fr))}
+.k4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.k2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.k3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.kpi{background:var(--color-background-primary);border-radius:var(--border-radius-md);padding:11px 13px;border:0.5px solid var(--color-border-tertiary);position:relative}
+.kpi-lbl{font-size:11px;color:var(--color-text-secondary);line-height:1.3;margin-bottom:3px}
+.kpi-val{font-size:24px;font-weight:500;color:var(--color-text-primary);line-height:1}
+.kpi-sub{font-size:10px;margin-top:3px;color:var(--color-text-secondary)}
+.kpi.red .kpi-val{color:#C8102E}
+.kpi.amb .kpi-val{color:#d97706}
+.kpi.grn .kpi-val{color:#166534}
+.cg2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.cg3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.cc{background:var(--color-background-primary);border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);padding:12px;margin-bottom:0;overflow:hidden;position:relative}
+.cc h4{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-secondary);margin-bottom:10px}
+.leg{display:flex;gap:12px;flex-wrap:wrap;font-size:10px;color:var(--color-text-secondary);margin-top:8px}
+.li{display:flex;align-items:center;gap:4px}
+.lsq{width:9px;height:9px;border-radius:2px}
+.lc{width:9px;height:9px;border-radius:50%}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{font-size:10px;font-weight:500;color:var(--color-text-secondary);padding:6px 8px;text-align:left;border-bottom:1px solid var(--color-border-tertiary);background:var(--color-background-secondary);white-space:nowrap}
+td{padding:6px 8px;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-primary);vertical-align:middle}
+tr:hover td{background:var(--color-background-tertiary)}
+tr:last-child td{border-bottom:none}
+.pill{display:inline-block;padding:1px 7px;border-radius:20px;font-size:10px;font-weight:500;white-space:nowrap}
+.pr{background:#fee2e2;color:#991b1b}
+.pa{background:#fef3c7;color:#92400e}
+.pg2{background:#dcfce7;color:#166534}
+.pb{background:#dbeafe;color:#1e40af}
+.pn{background:var(--color-background-tertiary);color:var(--color-text-secondary)}
+.rag-dot{width:11px;height:11px;border-radius:50%;display:inline-block;vertical-align:middle;flex-shrink:0}
+.heatmap-grid{display:grid;gap:2px}
+.hm-cell{padding:6px 4px;font-size:10px;text-align:center;border-radius:3px}
+.cc.mb12{margin-bottom:12px}
+.placeholder-msg{text-align:center;padding:40px 20px;color:var(--color-text-secondary);font-size:13px}
+.fb button{font-size:12px;padding:3px 10px;border-radius:4px;border:0.5px solid var(--color-border-tertiary);background:#1a2d4f;color:#fff;height:26px;cursor:pointer}
+.fb button:hover{background:#2a4060}
+.toggle-wrap{display:flex;gap:4px;margin-bottom:6px}
+.toggle-btn{font-size:10px;padding:2px 8px;border-radius:3px;border:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary);color:var(--color-text-secondary);cursor:pointer}
+.toggle-btn.active{background:#1a2d4f;color:#fff;border-color:#1a2d4f}
+.toggle-btn:hover:not(.active){background:var(--color-background-tertiary)}
+.k1{grid-template-columns:minmax(0,1fr)}
+.act-btn{font-size:10px;padding:2px 8px;border:0.5px solid var(--color-border-tertiary);border-radius:3px;background:var(--color-background-secondary);color:var(--color-text-primary);cursor:pointer;margin-right:3px}
+.act-btn:hover{background:var(--color-background-tertiary)}
+
+/* Expandable row detail */
+.detail-row td{padding:0;border-bottom:0.5px solid var(--color-border-tertiary)}
+.detail-row:hover td{background:transparent}
+.detail-panel{background:#f4f5f7;padding:12px 16px;margin:0;border-top:1px solid var(--color-border-tertiary)}
+.detail-panel .dp-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.detail-panel .dp-section{background:var(--color-background-primary);border-radius:var(--border-radius-md);padding:10px 12px;border:0.5px solid var(--color-border-tertiary)}
+.detail-panel .dp-section-title{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--color-text-secondary);margin-bottom:6px}
+.detail-panel .dp-row{display:flex;justify-content:space-between;padding:3px 0;font-size:11px;border-bottom:0.5px solid var(--color-border-tertiary)}
+.detail-panel .dp-row:last-child{border-bottom:none}
+.detail-panel .dp-key{color:var(--color-text-secondary)}
+.detail-panel .dp-val{font-weight:500;color:var(--color-text-primary);text-align:right;max-width:60%}
+
+/* Severity definitions note */
+.sev-defs{font-size:10px;color:var(--color-text-secondary);margin-top:8px;line-height:1.6;padding:6px 8px;background:var(--color-background-secondary);border-radius:4px}
+.sev-defs strong{font-weight:500;color:var(--color-text-primary)}
+
+/* Table heading row with filter */
+.table-header-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.table-header-row h4{margin-bottom:0}
+.table-header-row select{font-size:11px;padding:2px 6px;border-radius:4px;border:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary);color:var(--color-text-primary);height:24px}
+.table-header-row .fl{font-size:10px}
+.info-btn{position:absolute;top:6px;right:6px;width:18px;height:18px;border-radius:50%;background:#e8edf3;color:#5a6a7e;font-size:11px;font-weight:700;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;line-height:1}
+.info-btn:hover{background:#d0daea}
+.info-panel{display:none;position:relative;background:#f0f4fa;border:1px solid #d0daea;border-radius:4px;padding:8px 10px;margin-top:8px;font-size:10px;line-height:1.5;color:#333;z-index:4;animation:infoFadeIn .2s ease}
+.info-panel.open{display:block}
+@keyframes infoFadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+
+/* Feedback Mode Toggle */
+.fb-toggle{background:#C8102E;border:1px solid #C8102E;color:#fff;font-size:12px;padding:6px 16px;border-radius:4px;cursor:pointer;font-family:var(--font-sans);transition:all .2s;font-weight:600}
+.fb-toggle:hover{background:#a00d24;border-color:#a00d24;color:#fff}
+.fb-toggle.active{background:#d97706;border-color:#d97706;color:#fff;font-weight:600}
+
+/* Feedback bubble on visuals */
+.fb-bubble{display:none;position:absolute;top:6px;right:28px;width:20px;height:20px;border-radius:50%;background:#d97706;color:#fff;font-size:12px;border:none;cursor:pointer;align-items:center;justify-content:center;z-index:1000;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .15s}
+.fb-bubble:hover{transform:scale(1.15)}
+.fb-bubble.has-comment{background:#C8102E}
+body.feedback-mode .fb-bubble{display:flex}
+
+/* Comment count badge */
+.fb-badge{position:absolute;top:-4px;right:-4px;width:14px;height:14px;border-radius:50%;background:#C8102E;color:#fff;font-size:8px;display:flex;align-items:center;justify-content:center;font-weight:700}
+
+/* Feedback input panel */
+.fb-input-panel{display:none;position:absolute;top:32px;right:6px;width:320px;max-height:400px;overflow-y:auto;background:#fff;border:1px solid #e0e0e0;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.15);z-index:1001;padding:10px;font-size:11px}
+.fb-input-panel.open{display:block}
+.fb-input-panel textarea{width:100%;border:1px solid #e0e0e0;border-radius:4px;padding:6px 8px;font-size:11px;font-family:var(--font-sans);resize:vertical;min-height:60px;margin-bottom:6px}
+.fb-input-panel select{font-size:11px;padding:3px 6px;border:1px solid #e0e0e0;border-radius:4px;margin-right:6px}
+.fb-input-panel button{font-size:11px;padding:3px 10px;border-radius:4px;border:none;cursor:pointer;font-family:var(--font-sans)}
+.fb-input-panel .fb-save{background:#1a2d4f;color:#fff}
+.fb-input-panel .fb-save:hover{background:#2a4060}
+.fb-input-panel .fb-cancel{background:#f1f3f4;color:#333;margin-right:6px}
+.fb-input-panel .fb-delete{background:#fee2e2;color:#991b1b;margin-left:auto}
+
+/* Overall feedback panel */
+.fb-overall{display:none;background:#fffbeb;border:1px solid #f59e0b;border-radius:6px;padding:12px 16px;margin:0 14px 12px 14px}
+body.feedback-mode .fb-overall{display:block}
+.fb-overall h4{font-size:12px;color:#92400e;margin-bottom:8px}
+.fb-overall textarea{width:100%;border:1px solid #e0e0e0;border-radius:4px;padding:6px 8px;font-size:11px;font-family:var(--font-sans);resize:vertical;min-height:50px;margin-bottom:6px}
+.fb-overall .fb-comment-list{margin-top:8px}
+.fb-overall .fb-comment-item{background:#fff;border:1px solid #e0e0e0;border-radius:4px;padding:6px 8px;margin-bottom:4px;font-size:11px;display:flex;justify-content:space-between;align-items:start}
+.fb-overall .fb-comment-text{flex:1;margin-right:8px}
+.fb-overall .fb-comment-meta{font-size:9px;color:#757575;margin-top:2px}
+.fb-overall .fb-remove-comment{background:none;border:none;color:#991b1b;cursor:pointer;font-size:13px;padding:0 2px}
+
+/* Export bar */
+.fb-export-bar{display:none;background:#1a2d4f;padding:8px 16px;align-items:center;justify-content:space-between}
+body.feedback-mode .fb-export-bar{display:flex}
+.fb-export-bar span{color:rgba(255,255,255,.7);font-size:11px}
+.fb-export-bar .fb-count{color:#f59e0b;font-weight:600}
+.fb-export-bar button{font-size:11px;padding:4px 14px;border-radius:4px;border:none;cursor:pointer;font-family:var(--font-sans)}
+.fb-export-btn{background:#f59e0b;color:#000;font-weight:500}
+.fb-export-btn:hover{background:#d97706}
+.fb-clear-btn{background:rgba(255,255,255,.1);color:rgba(255,255,255,.7);margin-left:8px}
+.fb-clear-btn:hover{background:rgba(255,255,255,.2);color:#fff}
+
+/* Version badge */
+.version-badge{background:rgba(255,255,255,.1);color:rgba(255,255,255,.5);font-size:10px;padding:2px 8px;border-radius:3px;margin-left:10px}
+
+/* Existing comment indicator */
+.fb-existing{background:#fef3c7;border:1px solid #fde68a;border-radius:4px;padding:6px 8px;margin-top:6px;font-size:10px;color:#92400e;line-height:1.4}
+.fb-existing strong{color:#78350f}
+</style>
+</head>
+<body>
+<div class="dw">
+<!-- TOPBAR -->
+<div class="topbar">
+  <div>
+    <div class="topbar-title">Non-Standard Design Detection &mdash; Operations Dashboard</div>
+    <div class="topbar-sub">VMO2 &middot; Network Design &amp; Build &middot; Q1 2026</div>
+  </div>
+  <div class="topbar-right">Updated daily &middot; Last refresh 24 Mar 2026 08:41 <button class="fb-toggle" onclick="toggleFeedbackMode()">&#x1F4AC; Feedback</button><span class="version-badge">v5.0</span></div>
+</div>
+
+<!-- MOCK DATA BANNER -->
+<div class="mock-banner">&#9888;&#65039; ALL DATA IS ILLUSTRATIVE &mdash; Pending integration with Master Component Database and SiteFlo</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab on" onclick="sw(0)">Overview</div>
+  <div class="tab" onclick="sw(1)">Supplier &amp; RF Analysis</div>
+</div>
+
+<!-- EXPORT BAR -->
+<div class="fb-export-bar">
+  <span>Feedback Mode — <span class="fb-count" id="fbCount">0</span> comments</span>
+  <div>
+    <button class="fb-export-btn" onclick="exportFeedback()">&#x1F4CB; Submit Feedback</button>
+    <button class="fb-clear-btn" onclick="clearAllFeedback()">Clear All</button>
+  </div>
+</div>
+
+<!-- ============ TAB 0: Overview ============ -->
+<div class="pg on" id="pg0" data-tab="Overview">
+  <!-- Filter bar -->
+  <div class="fb">
+    <span class="fl">Period</span>
+    <select><option>All</option><option>Q4 2025</option><option>Q1 2026</option></select>
+    <span class="fl">Region</span>
+    <select><option>All</option><option>UK - London</option><option>UK - West</option><option>UK - South</option><option>UK - North</option></select>
+    <span class="fl">Design supplier</span>
+    <select><option>All</option><option>Nokia</option><option>Ericsson</option></select>
+    <span class="fl">Site type</span>
+    <select><option>All</option><option>Greenfield</option><option>Rooftop</option><option>Street Furniture</option></select>
+    <span class="fl">Non-conformance category</span>
+    <select><option>All</option><option>Non-std equipment</option><option>Config mismatch</option><option>Unapproved vendor</option><option>GRP deviation</option><option>RF code breach</option><option>EOL component</option><option>Design guide non-adherence</option></select>
+    <span class="fl">Severity</span>
+    <select><option>All</option><option>Critical</option><option>Major</option><option>Minor</option></select>
+  </div>
+
+  <!-- Overall feedback panel -->
+  <div class="fb-overall" id="fbOverall">
+    <h4>&#x1F4AC; Overall Dashboard Feedback</h4>
+    <div style="display:flex;gap:6px;align-items:end">
+      <div style="flex:1">
+        <textarea id="fbOverallInput" placeholder="Add overall feedback about this dashboard..."></textarea>
+        <div style="display:flex;align-items:center">
+          <select id="fbOverallPriority">
+            <option value="high">&#x1F534; High</option>
+            <option value="medium" selected>&#x1F7E1; Medium</option>
+            <option value="low">&#x1F7E2; Low</option>
+          </select>
+          <button class="fb-save" onclick="addOverallComment()">Add Comment</button>
+        </div>
+      </div>
+    </div>
+    <div class="fb-comment-list" id="fbOverallComments"></div>
+  </div>
+
+  <!-- KPI Row 1 -->
+  <div class="krow k2">
+    <div class="kpi red" data-visual-id="kpi-total-flags" data-visual-name="Total Non-Standard Flags"><button class="info-btn" onclick="toggleInfo(this)">&#x2139;</button><div class="info-panel">Count of components or config codes flagged as non-standard. Logic will link to Master Component Database when available. Drives: scale of non-conformance across portfolio.</div><div class="kpi-lbl">Total non-standard flags</div><div class="kpi-val">156</div><div class="kpi-sub">Across 142 sites</div></div>
+    <div class="kpi amb" data-visual-id="kpi-adherence" data-visual-name="Design Guide Adherence"><button class="info-btn" onclick="toggleInfo(this)">&#x2139;</button><div class="info-panel">Percentage of designs conforming to current design guidance. Target: 95%. Drives: overall design quality monitoring and compliance tracking.</div><div class="kpi-lbl">Design guide adherence</div><div class="kpi-val">88%</div><div class="kpi-sub">Target: 95%</div></div>
+  </div>
+
+  <!-- KPI Row 2 -->
+  <div class="krow k2">
+    <div class="kpi red" data-visual-id="kpi-pending" data-visual-name="Pending Review"><button class="info-btn" onclick="toggleInfo(this)">&#x2139;</button><div class="info-panel">Designs awaiting review — will be sourced from SiteFlo when integrated. Drives: intervention backlog visibility and resource allocation.</div><div class="kpi-lbl">Pending review</div><div class="kpi-val">41</div><div class="kpi-sub">Across 38 sites</div></div>
+    <div class="kpi" data-visual-id="kpi-approval-time" data-visual-name="Avg Approval Time"><button class="info-btn" onclick="toggleInfo(this)">&#x2139;</button><div class="info-panel">Average days from submission to decision. Target: &lt;5 days. Drives: workflow efficiency monitoring and SLA compliance.</div><div class="kpi-lbl">Avg approval time</div><div class="kpi-val">4.2 <span style="font-size:13px">days</span></div><div class="kpi-sub">Target: &lt;5 days</div></div>
+  </div>
+
+  <!-- Charts row 1 -->
+  <div class="cg2">
+    <div class="cc" data-visual-id="chart-flags-category" data-visual-name="Non-Standard Flags by Category"><button class="info-btn" onclick="toggleInfo(this)">&#x2139;</button><div class="info-panel">Shows distribution of non-standard flags across categories. Identifies which types of non-conformance are most prevalent. Drives: targeted remediation and design guidance updates.</div><h4>Non-standard flags by category</h4><div style="position:relative;height:220px;overflow:hidden"><canvas id="ch_pareto"></canvas></div></div>
+    <div class="cc" data-visual-id="chart-trend" data-visual-name="Non-Standard Trend"><button class="info-btn" onclick="toggleInfo(this)">&#x2139;</button><div class="info-panel">Tracks volume of non-standard designs over time. Stakeholder insight: non-standard designs increase as end-of-month/quarter time pressure increases. Drives: workload smoothing and deadline policy decisions.</div><h4>Non-standard trend &mdash; weekly submissions</h4><div class="toggle-wrap"><button class="toggle-btn active" onclick="setTrendView('weekly',this)">Weekly</button><button class="toggle-btn" onclick="setTrendView('monthly',this)">Monthly</button><button class="toggle-btn" onclick="setTrendView('quarterly',this)">Quarterly</button></div><div style="font-size:10px;color:var(--color-text-secondary);margin-bottom:6px">Note: submission volumes typically spike at period boundaries</div><div style="position:relative;height:210px;overflow:hidden"><canvas id="ch_trend"></canvas></div></div>
+  </div>
+
+  <!-- Charts row 2 -->
+  <div class="cg2">
+    <div class="cc" data-visual-id="chart-region" data-visual-name="Flags by Region"><button class="info-btn" onclick="toggleInfo(this)">&#x2139;</button><div class="info-panel">Regional breakdown of non-standard flags by severity. Identifies geographic patterns in non-conformance. Drives: regional training needs assessment.</div><h4>Flags by region &mdash; stacked bar</h4><div style="position:relative;height:220px;overflow:hidden"><canvas id="ch_region"></canvas></div></div>
+    <div class="cc" data-visual-id="chart-severity" data-visual-name="Severity Distribution"><button class="info-btn" onclick="toggleInfo(this)">&#x2139;</button><div class="info-panel">Distribution across Critical/Major/Minor. Definitions: Critical = component availability or non-standard; Major = cost threshold exceeded; Minor = everything else. Drives: triage prioritisation and escalation workflow.</div><h4>Severity distribution</h4><div style="position:relative;height:220px;overflow:hidden"><canvas id="ch_severity"></canvas></div>
+      <div class="sev-defs">
+        <strong>Severity definitions:</strong><br>
+        Critical = Component availability issue or non-standard component<br>
+        Major = Cost exceeds defined threshold<br>
+        Minor = Everything else
+      </div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="cc" style="margin-bottom:0" data-visual-id="table-all-nonstandard" data-visual-name="All Non-Standard Designs Table">
+    <button class="info-btn" onclick="toggleInfo(this)">&#x2139;</button><div class="info-panel">Complete list of flagged designs with expandable detail. Filter by flag type to find all CSRs with a specific issue. Stakeholder said: ability to highlight to relevant SME. Drives: case-level review and assignment.</div>
+    <div class="table-header-row">
+      <h4>All non-standard designs</h4>
+      <span class="fl">Filter by flag type</span>
+      <select id="flagTypeFilter" onchange="filterByFlagType(this.value)">
+        <option value="All">All</option>
+        <option value="Non-std equipment">Non-std equipment</option>
+        <option value="Config mismatch">Config mismatch</option>
+        <option value="Unapproved vendor">Unapproved vendor</option>
+        <option value="GRP deviation">GRP deviation</option>
+        <option value="RF code breach">RF code breach</option>
+        <option value="EOL component">EOL component</option>
+        <option value="Design guide non-adherence">Design guide non-adherence</option>
+      </select>
+    </div>
+    <div style="max-height:420px;overflow:auto">
+    <table>
+      <thead><tr><th>CSR No.</th><th>Site Name</th><th>Region</th><th>Category</th><th>Severity</th><th>Flagged Component</th><th>RF Code</th><th>Design Guide</th><th>Supplier</th><th>Status</th><th>Date Flagged</th></tr></thead>
+      <tbody id="tb_overview"></tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TAB 1: Supplier & RF Analysis ============ -->
+<div class="pg" id="pg1" data-tab="Supplier &amp; RF Analysis">
+  <!-- KPI Row -->
+  <div class="krow k1">
+    <div class="kpi amb" data-visual-id="kpi-rf-code" data-visual-name="Most Common RF Code Issue"><button class="info-btn" onclick="toggleInfo(this)">&#x2139;</button><div class="info-panel">Identifies the single RF configuration code generating the most non-standard flags. Drives: targeted investigation of problematic configurations.</div><div class="kpi-lbl">Most common RF code issue</div><div class="kpi-val" style="font-size:16px">N01B-M3-2-v1</div><div class="kpi-sub">14 flags</div></div>
+  </div>
+
+  <!-- Charts row 1 -->
+  <div class="cg2">
+    <div class="cc" data-visual-id="chart-supplier-stacked" data-visual-name="Supplier Non-Conformance Categories"><button class="info-btn" onclick="toggleInfo(this)">&#x2139;</button><div class="info-panel">Changed from aggregate rate (%) to category breakdown per supplier. Stakeholder asked: 'can we show types of non-conformance per supplier?' Reveals whether issues are systemic (one category dominates) or scattered. Drives: targeted supplier intervention strategy.</div><h4>Supplier comparison &mdash; non-conformance categories</h4><div style="font-size:10px;color:var(--color-text-secondary);margin-bottom:6px">Stacked breakdown of non-conformance types per supplier</div><div style="position:relative;height:250px;overflow:hidden"><canvas id="ch_supp_rate"></canvas></div></div>
+    <div class="cc" data-visual-id="chart-supplier-trend" data-visual-name="Supplier Trend"><button class="info-btn" onclick="toggleInfo(this)">&#x2139;</button><div class="info-panel">Tracks supplier non-standard rates over time. Identifies improving or deteriorating suppliers. Drives: supplier performance reviews and contract discussions.</div><h4>Supplier trend &mdash; monthly non-standard rate</h4><div style="position:relative;height:260px;overflow:hidden"><canvas id="ch_supp_trend"></canvas></div></div>
+  </div>
+
+  <!-- Charts row 2 -->
+  <div class="cg2">
+    <div class="cc" data-visual-id="chart-rf-config" data-visual-name="Non-Standard Flags by RF Config Code"><button class="info-btn" onclick="toggleInfo(this)">&#x2139;</button><div class="info-panel">Shows which RF configuration codes have the most non-standard flags. Drives: RF configuration review and design template updates.</div><h4>Non-standard flags by RF config code</h4><div style="position:relative;height:260px;overflow:hidden"><canvas id="ch_rf_code"></canvas></div></div>
+    <div class="cc" data-visual-id="chart-rf-heatmap" data-visual-name="RF Code Family vs Non-Conformance Heatmap"><button class="info-btn" onclick="toggleInfo(this)">&#x2139;</button><div class="info-panel">Cross-reference showing which RF code families produce which types of non-conformance. Drives: root cause analysis — is the problem the code or the component?</div>
+      <h4>RF code family vs non-conformance type</h4>
+      <div id="heatmap_rf" style="overflow:auto"></div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="cc" data-visual-id="table-supplier-summary" data-visual-name="Supplier Performance Summary Table">
+    <button class="info-btn" onclick="toggleInfo(this)">&#x2139;</button><div class="info-panel">Consolidated supplier scorecard with key metrics and trend indicators. Drives: quarterly supplier reviews and performance improvement plans.</div>
+    <h4>Supplier performance summary</h4>
+    <table>
+      <thead><tr><th>Supplier</th><th>Total Designs</th><th>Non-std Count</th><th>Non-std Rate</th><th>Avg Approval Time</th><th>Most Common Issue</th><th>Trend</th></tr></thead>
+      <tbody id="tb_supplier"></tbody>
+    </table>
+  </div>
+</div>
+
+</div><!-- /dw -->
+
+<script>
+function toggleInfo(el){
+  const panel = el.nextElementSibling || el.parentElement.querySelector('.info-panel');
+  if(panel) panel.classList.toggle('open');
+}
+Chart.defaults.font.family='system-ui,-apple-system,sans-serif';
+Chart.defaults.font.size=10;
+Chart.defaults.color='#757575';
+
+// ---- Tab switching ----
+var tabInited=[true,false];
+function sw(t){
+  document.querySelectorAll('.tab').forEach(function(el,i){el.classList.toggle('on',i===t);});
+  document.querySelectorAll('.pg').forEach(function(el,i){el.classList.toggle('on',i===t);});
+  if(!tabInited[t]){tabInited[t]=true;if(t===1)initTab1();}
+}
+
+// ---- Data ----
+var sites=[
+  {csr:'1214',name:'Streatham Hill North',region:'London',cat:'Non-std equipment',sev:'Critical',comp:'Antenna bracket',rf:'N01A-M4-1-v1',dg:'DG v3.2',supplier:'Circet',status:'Pending review',date:'2026-03-18'},
+  {csr:'5300',name:'TYRRELLS WOOD',region:'London',cat:'Config mismatch',sev:'Major',comp:'RRU config',rf:'E01A-M3-1-v1',dg:'DG v3.1',supplier:'Clarke Telecom',status:'Under review',date:'2026-03-17'},
+  {csr:'23568',name:'Velodrome Unwind',region:'West',cat:'Unapproved vendor',sev:'Major',comp:'Cable tray',rf:'E01A-M2-1-v1',dg:'DG v3.2',supplier:'WHP',status:'Approved',date:'2026-03-15'},
+  {csr:'35234',name:'Arsenal Emirates',region:'London',cat:'Non-std equipment',sev:'Critical',comp:'Steelwork frame',rf:'N01A-M2-1-v1',dg:'DG v3.2',supplier:'Cornerstone',status:'Escalated',date:'2026-03-14'},
+  {csr:'636',name:'Kettering',region:'South',cat:'GRP deviation',sev:'Minor',comp:'GRP cabinet',rf:'E01A-M4-1-v1',dg:'DG v3.0',supplier:'ICS',status:'Approved',date:'2026-03-12'},
+  {csr:'62908',name:'Belfast Windsor',region:'North',cat:'RF code breach',sev:'Critical',comp:'RF filter',rf:'N01A-M3-1-v1',dg:'DG v3.2',supplier:'O2',status:'Pending review',date:'2026-03-11'},
+  {csr:'67163',name:'Acomb Wood Drive',region:'North',cat:'EOL component',sev:'Major',comp:'Power supply unit',rf:'E01B-M2-1-v1',dg:'DG v3.1',supplier:'8point8',status:'Under review',date:'2026-03-10'},
+  {csr:'89095',name:'Liverpool Kingsway',region:'West',cat:'Config mismatch',sev:'Minor',comp:'Backhaul config',rf:'N01B-M3-1-v1',dg:'DG v3.2',supplier:'United Living',status:'Approved',date:'2026-03-09'},
+  {csr:'12836',name:'MOTE PARK',region:'South',cat:'Non-std equipment',sev:'Major',comp:'Mast head amplifier',rf:'N01A-M4-1-v1',dg:'DG v3.1',supplier:'Circet',status:'Pending review',date:'2026-03-08'},
+  {csr:'39347',name:'Muirton',region:'North',cat:'Design guide non-adherence',sev:'Minor',comp:'Foundation design',rf:'E01A-M3-1-v1',dg:'DG v3.0',supplier:'Clarke Telecom',status:'Approved',date:'2026-03-07'},
+  {csr:'43727',name:'Battersea Micro',region:'London',cat:'Unapproved vendor',sev:'Critical',comp:'Diplexer unit',rf:'E01A-M2-1-v1',dg:'DG v3.2',supplier:'WHP',status:'Escalated',date:'2026-03-06'},
+  {csr:'49553',name:'Cheshunt',region:'South',cat:'Non-std equipment',sev:'Major',comp:'Antenna mount',rf:'N01A-M2-1-v1',dg:'DG v3.1',supplier:'ICS',status:'Under review',date:'2026-03-05'},
+  {csr:'10256',name:'Holystone',region:'North',cat:'GRP deviation',sev:'Minor',comp:'GRP shroud',rf:'N01A-M3-1-v1',dg:'DG v3.0',supplier:'Cornerstone',status:'Approved',date:'2026-03-04'},
+  {csr:'12962',name:'Tulloch',region:'North',cat:'Config mismatch',sev:'Major',comp:'Sector config',rf:'E01B-M2-1-v1',dg:'DG v3.2',supplier:'O2',status:'Pending review',date:'2026-03-03'},
+  {csr:'73791',name:'Durham Kepier',region:'North',cat:'RF code breach',sev:'Critical',comp:'Combiner unit',rf:'N01B-M3-1-v1',dg:'DG v3.2',supplier:'8point8',status:'Escalated',date:'2026-03-02'},
+  {csr:'92585',name:'Eccles Unwind',region:'West',cat:'Non-std equipment',sev:'Major',comp:'TMA unit',rf:'N01A-M4-1-v1',dg:'DG v3.1',supplier:'Circet',status:'Pending review',date:'2026-03-01'},
+  {csr:'10394',name:'Longman',region:'North',cat:'EOL component',sev:'Minor',comp:'Battery pack',rf:'E01A-M4-1-v1',dg:'DG v3.0',supplier:'United Living',status:'Approved',date:'2026-02-28'},
+  {csr:'90547',name:'Siemens York',region:'North',cat:'Unapproved vendor',sev:'Major',comp:'Feeder cable',rf:'E01A-M3-1-v1',dg:'DG v3.2',supplier:'Clarke Telecom',status:'Under review',date:'2026-02-27'},
+  {csr:'94086',name:'South Erith',region:'London',cat:'Config mismatch',sev:'Minor',comp:'CPRI mapping',rf:'N01A-M2-1-v1',dg:'DG v3.1',supplier:'ICS',status:'Approved',date:'2026-02-26'},
+  {csr:'91465',name:'Colliers Wood',region:'London',cat:'Non-std equipment',sev:'Critical',comp:'Sector antenna',rf:'E01A-M2-1-v1',dg:'DG v3.2',supplier:'Cornerstone',status:'Pending review',date:'2026-02-25'}
+];
+
+// Mock detail data for expandable rows
+var rowDetails={
+  '1214':{desc:'Non-standard antenna bracket used instead of approved VMO2 Type-A bracket. Bracket is 50mm wider than specification.',ref:'DG-3.2 Section 4.2.1',rec:'Replace with approved Type-A bracket or submit DBA for approval',designVer:'v3 (18 Mar 2026)',prevVer:'v2 (10 Mar 2026)'},
+  '5300':{desc:'RRU configuration does not match the assigned RF code. Port mapping differs from standard template.',ref:'DG-3.1 Section 5.2.3',rec:'Reconfigure RRU port mapping to match RF code template',designVer:'v2 (17 Mar 2026)',prevVer:'v1 (08 Mar 2026)'},
+  '23568':{desc:'Cable tray sourced from vendor not on the VMO2 approved supplier list. Tray dimensions match spec but vendor is unapproved.',ref:'DG-3.2 Section 7.4.1',rec:'Source replacement from approved vendor list or submit vendor approval request',designVer:'v2 (15 Mar 2026)',prevVer:'v1 (05 Mar 2026)'},
+  '35234':{desc:'Custom steelwork frame designed to accommodate stadium roof constraints. Frame exceeds standard weight limits by 15%.',ref:'DG-3.2 Section 3.1.2',rec:'Structural engineering sign-off required. Escalate to vendor for load analysis.',designVer:'v2 (14 Mar 2026)',prevVer:'v1 (05 Mar 2026)'},
+  '636':{desc:'GRP cabinet dimensions deviate from standard by 80mm in height to accommodate additional battery shelf.',ref:'DG-3.0 Section 6.3.1',rec:'Confirm structural integrity and submit modified GRP specification for approval',designVer:'v3 (12 Mar 2026)',prevVer:'v2 (01 Mar 2026)'},
+  '62908':{desc:'RF filter specification does not match the assigned RF code N01A-M3-1-v1. Filter attenuation 3dB below requirement.',ref:'RF-Spec Section 2.3.4',rec:'Replace RF filter with correct specification for N01A-M3 config',designVer:'v2 (11 Mar 2026)',prevVer:'v1 (02 Mar 2026)'},
+  '67163':{desc:'Power supply unit model PSU-400B has reached end-of-life. No longer manufactured; spares availability limited.',ref:'DG-3.1 Section 8.1.2',rec:'Replace with current model PSU-500C from approved component list',designVer:'v2 (10 Mar 2026)',prevVer:'v1 (28 Feb 2026)'},
+  '89095':{desc:'Backhaul configuration uses 2+0 instead of specified 1+1 protection scheme. Capacity matches but resilience differs.',ref:'DG-3.2 Section 5.4.2',rec:'Revert to 1+1 protection or obtain network planning approval for 2+0',designVer:'v2 (09 Mar 2026)',prevVer:'v1 (27 Feb 2026)'},
+  '12836':{desc:'Mast head amplifier model MHA-220 not on current approved component list. Gain characteristics differ from standard.',ref:'DG-3.1 Section 4.5.1',rec:'Replace with approved MHA-300 or submit component approval request',designVer:'v2 (08 Mar 2026)',prevVer:'v1 (25 Feb 2026)'},
+  '39347':{desc:'Foundation design uses pad foundation instead of specified pile foundation. Soil survey indicates adequate bearing capacity.',ref:'DG-3.0 Section 2.1.4',rec:'Obtain structural engineer sign-off for pad foundation alternative',designVer:'v3 (07 Mar 2026)',prevVer:'v2 (22 Feb 2026)'},
+  '43727':{desc:'Diplexer unit sourced from unapproved vendor. Unit passes RF specification tests but vendor not on approved list.',ref:'DG-3.2 Section 7.4.1',rec:'Source from approved vendor or submit vendor qualification request',designVer:'v2 (06 Mar 2026)',prevVer:'v1 (24 Feb 2026)'},
+  '49553':{desc:'Antenna mount bracket uses non-standard 60mm diameter pole clamp instead of approved 48mm specification.',ref:'DG-3.1 Section 4.2.3',rec:'Replace pole clamp with 48mm approved variant or request design deviation',designVer:'v2 (05 Mar 2026)',prevVer:'v1 (22 Feb 2026)'},
+  '10256':{desc:'GRP shroud height reduced by 120mm from standard to accommodate existing street furniture clearance requirements.',ref:'DG-3.0 Section 6.3.2',rec:'Confirm reduced shroud provides adequate environmental protection',designVer:'v2 (04 Mar 2026)',prevVer:'v1 (20 Feb 2026)'},
+  '12962':{desc:'Sector configuration uses 4T4R instead of specified 8T8R MIMO scheme. Coverage modelling shows adequate performance.',ref:'DG-3.2 Section 5.1.1',rec:'Validate capacity requirements and obtain RF planning team approval',designVer:'v2 (03 Mar 2026)',prevVer:'v1 (19 Feb 2026)'},
+  '73791':{desc:'Combiner unit insertion loss exceeds RF code specification by 1.2dB. Unit is from approved vendor but wrong model.',ref:'DG-3.2 Section 2.3.6',rec:'Replace with correct combiner model matching RF code N01B-M3 specification',designVer:'v2 (02 Mar 2026)',prevVer:'v1 (18 Feb 2026)'},
+  '92585':{desc:'TMA unit model TMA-B2 not on current approved equipment list. Noise figure 0.5dB above standard specification.',ref:'DG-3.1 Section 4.6.1',rec:'Replace with approved TMA model or submit equipment approval request',designVer:'v2 (01 Mar 2026)',prevVer:'v1 (17 Feb 2026)'},
+  '10394':{desc:'Battery pack model BP-48-200 has been flagged as end-of-life by manufacturer. Last production batch Q3 2025.',ref:'DG-3.0 Section 8.1.4',rec:'Replace with current model BP-48-300 from approved component list',designVer:'v2 (28 Feb 2026)',prevVer:'v1 (14 Feb 2026)'},
+  '90547':{desc:'Feeder cable sourced from non-approved vendor. Cable specifications match requirements but vendor not qualified.',ref:'DG-3.2 Section 7.4.1',rec:'Re-source from approved vendor list or submit vendor approval application',designVer:'v2 (27 Feb 2026)',prevVer:'v1 (13 Feb 2026)'},
+  '94086':{desc:'CPRI mapping uses option 7 split instead of specified option 8. Functional but differs from standard configuration.',ref:'DG-3.1 Section 5.3.2',rec:'Reconfigure to option 8 CPRI split or obtain network architecture approval',designVer:'v2 (26 Feb 2026)',prevVer:'v1 (12 Feb 2026)'},
+  '91465':{desc:'Sector antenna model not on current approved list. Beamwidth 5 degrees wider than standard specification.',ref:'DG-3.2 Section 4.1.1',rec:'Replace with approved antenna model or submit RF performance justification',designVer:'v2 (25 Feb 2026)',prevVer:'v1 (11 Feb 2026)'}
+};
+
+function sevPill(s){return s==='Critical'?'pr':s==='Major'?'pa':'pn';}
+function statusPill(s){return s==='Pending review'?'pa':s==='Under review'?'pb':s==='Approved'?'pg2':s==='Escalated'?'pr':'pn';}
+
+// ---- Expandable row detail ----
+var expandedRow=null;
+function toggleRowDetail(csr){
+  var existing=document.getElementById('detail-'+csr);
+  if(existing){
+    existing.remove();
+    expandedRow=null;
+    return;
+  }
+  // Collapse any previously expanded row
+  if(expandedRow){
+    var prev=document.getElementById('detail-'+expandedRow);
+    if(prev) prev.remove();
+  }
+  expandedRow=csr;
+  var s=sites.find(function(x){return x.csr===csr;});
+  if(!s) return;
+  var d=rowDetails[csr]||{desc:'Non-conformance detected during design review. Component does not meet standard specification.',ref:'DG-3.2 General',rec:'Review and replace with approved component',designVer:'v2',prevVer:'v1'};
+  var clickedRow=document.querySelector('tr[data-csr="'+csr+'"]');
+  if(!clickedRow) return;
+  var detailTr=document.createElement('tr');
+  detailTr.className='detail-row';
+  detailTr.id='detail-'+csr;
+  var td=document.createElement('td');
+  td.colSpan=11;
+  td.innerHTML='<div class="detail-panel"><div class="dp-grid">'
+    +'<div class="dp-section"><div class="dp-section-title">Non-conformance details</div>'
+    +'<div class="dp-row"><span class="dp-key">Category</span><span class="dp-val">'+s.cat+'</span></div>'
+    +'<div class="dp-row"><span class="dp-key">Component</span><span class="dp-val">'+s.comp+'</span></div>'
+    +'<div class="dp-row"><span class="dp-key">Severity</span><span class="dp-val"><span class="pill '+sevPill(s.sev)+'">'+s.sev+'</span></span></div>'
+    +'<div class="dp-row"><span class="dp-key">Description</span><span class="dp-val" style="text-align:left;max-width:none">'+d.desc+'</span></div>'
+    +'<div class="dp-row"><span class="dp-key">Standard ref</span><span class="dp-val">'+d.ref+'</span></div>'
+    +'<div class="dp-row"><span class="dp-key">Recommendation</span><span class="dp-val" style="text-align:left;max-width:none">'+d.rec+'</span></div>'
+    +'</div>'
+    +'<div class="dp-section"><div class="dp-section-title">Design version info</div>'
+    +'<div class="dp-row"><span class="dp-key">Current version</span><span class="dp-val">'+d.designVer+'</span></div>'
+    +'<div class="dp-row"><span class="dp-key">Previous version</span><span class="dp-val">'+d.prevVer+'</span></div>'
+    +'<div class="dp-row"><span class="dp-key">Design guide</span><span class="dp-val">'+s.dg+'</span></div>'
+    +'<div class="dp-row"><span class="dp-key">RF config code</span><span class="dp-val">'+s.rf+'</span></div>'
+    +'<div class="dp-row"><span class="dp-key">Supplier</span><span class="dp-val">'+s.supplier+'</span></div>'
+    +'<div class="dp-row"><span class="dp-key">Status</span><span class="dp-val"><span class="pill '+statusPill(s.status)+'">'+s.status+'</span></span></div>'
+    +'</div>'
+    +'</div></div>';
+  detailTr.appendChild(td);
+  clickedRow.parentNode.insertBefore(detailTr,clickedRow.nextSibling);
+}
+
+// ---- Populate overview table ----
+(function(){
+  var h='';
+  sites.forEach(function(s){
+    h+='<tr style="cursor:pointer" data-csr="'+s.csr+'" data-cat="'+s.cat+'" onclick="toggleRowDetail(\''+s.csr+'\')"><td>'+s.csr+'</td><td>'+s.name+'</td><td>'+s.region+'</td><td>'+s.cat+'</td><td><span class="pill '+sevPill(s.sev)+'">'+s.sev+'</span></td><td>'+s.comp+'</td><td>'+s.rf+'</td><td>'+s.dg+'</td><td>'+s.supplier+'</td><td><span class="pill '+statusPill(s.status)+'">'+s.status+'</span></td><td>'+s.date+'</td></tr>';
+  });
+  document.getElementById('tb_overview').innerHTML=h;
+})();
+
+// ---- Filter by flag type ----
+function filterByFlagType(val){
+  // Collapse any expanded detail row
+  if(expandedRow){
+    var prev=document.getElementById('detail-'+expandedRow);
+    if(prev) prev.remove();
+    expandedRow=null;
+  }
+  var rows=document.querySelectorAll('#tb_overview tr[data-csr]');
+  rows.forEach(function(r){
+    if(val==='All'||r.getAttribute('data-cat')===val){
+      r.style.display='';
+    } else {
+      r.style.display='none';
+    }
+  });
+}
+
+// ---- Tab 0 charts ----
+(function(){
+  // Pareto
+  var cats=['Non-std equip','Config mismatch','Unapproved vendor','GRP deviation','RF code breach','EOL component','Design guide'];
+  var vals=[38,24,17,12,9,6,4];
+  new Chart(document.getElementById('ch_pareto'),{type:'bar',data:{labels:cats,datasets:[{label:'Count',data:vals,backgroundColor:'#1a2d4f',borderRadius:3}]},options:{maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'#f1f3f4'}},x:{grid:{display:false}}}}});
+
+  // Trend
+  var wks=['W1','W2','W3','W4','W5','W6','W7','W8','W9','W10','W11','W12','W13','W14','W15','W16'];
+  var tdata=[4,5,6,5,7,8,7,9,8,11,9,12,11,14,12,15];
+  window._trendChart=new Chart(document.getElementById('ch_trend'),{type:'line',data:{labels:wks,datasets:[{data:tdata,borderColor:'#C8102E',backgroundColor:'rgba(200,16,46,0.08)',fill:true,tension:0.4,pointRadius:2,pointBackgroundColor:'#C8102E'}]},options:{maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'#f1f3f4'}},x:{grid:{display:false}}}}});
+
+  // Region stacked
+  var regions=['London','West','South','North'];
+  new Chart(document.getElementById('ch_region'),{type:'bar',data:{labels:regions,datasets:[{label:'Non-std equipment',data:[18,10,8,14],backgroundColor:'#1a2d4f',borderRadius:2},{label:'Config mismatch',data:[8,6,4,10],backgroundColor:'#4a8abf',borderRadius:2},{label:'Unapproved vendor',data:[5,4,3,6],backgroundColor:'#C8102E',borderRadius:2},{label:'Other',data:[6,5,4,8],backgroundColor:'#bbb',borderRadius:2}]},options:{maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:9,padding:8}}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,beginAtZero:true,grid:{color:'#f1f3f4'}}}}});
+
+  // Severity
+  new Chart(document.getElementById('ch_severity'),{type:'bar',data:{labels:['Critical','Major','Minor'],datasets:[{data:[23,67,66],backgroundColor:['#C8102E','#d97706','#9e9e9e'],borderRadius:3}]},options:{indexAxis:'y',maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,grid:{color:'#f1f3f4'}},y:{grid:{display:false}}}}});
+})();
+
+// ---- Trend toggle ----
+function setTrendView(view,btn){
+  document.querySelectorAll('.toggle-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  var labels,data;
+  if(view==='weekly'){
+    labels=['W1','W2','W3','W4','W5','W6','W7','W8','W9','W10','W11','W12','W13','W14','W15','W16'];
+    data=[4,5,6,5,7,8,7,9,8,11,9,12,11,14,12,15];
+  } else if(view==='monthly'){
+    labels=['Dec','Jan','Feb','Mar'];
+    data=[20,27,40,52];
+  } else {
+    labels=['Q4 2025','Q1 2026'];
+    data=[20,119];
+  }
+  window._trendChart.destroy();
+  window._trendChart=new Chart(document.getElementById('ch_trend'),{type:'line',data:{labels:labels,datasets:[{data:data,borderColor:'#C8102E',backgroundColor:'rgba(200,16,46,0.08)',fill:true,tension:0.4,pointRadius:2,pointBackgroundColor:'#C8102E'}]},options:{maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'#f1f3f4'}},x:{grid:{display:false}}}}});
+}
+
+// ---- Tab 1 init ----
+function initTab1(){
+  // Supplier rate - STACKED BAR by non-conformance category
+  var supps=['Circet','Clarke Telecom','ICS','Cornerstone','8point8','O2','United Living','WHP'];
+  new Chart(document.getElementById('ch_supp_rate'),{type:'bar',data:{labels:supps,datasets:[
+    {label:'Non-std equipment',data:[7.2,3.1,4.8,3.6,2.1,1.8,1.2,0.9],backgroundColor:'#1a2d4f',borderRadius:0},
+    {label:'Config mismatch',data:[3.8,4.2,2.4,1.9,1.6,2.8,1.4,1.1],backgroundColor:'#4a8abf',borderRadius:0},
+    {label:'Unapproved vendor',data:[2.1,1.5,1.8,2.2,0.8,0.6,0.9,0.5],backgroundColor:'#C8102E',borderRadius:0},
+    {label:'GRP deviation',data:[1.8,1.2,0.9,0.7,1.4,0.8,1.0,0.3],backgroundColor:'#d97706',borderRadius:0},
+    {label:'RF code breach',data:[2.0,1.1,1.2,0.6,1.5,0.7,0.6,0.2],backgroundColor:'#166534',borderRadius:0},
+    {label:'EOL component',data:[1.5,1.0,0.7,0.4,0.8,0.4,0.5,0.2],backgroundColor:'#7c3aed',borderRadius:0}
+  ]},options:{indexAxis:'y',maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:9,padding:6,font:{size:9}}}},scales:{x:{stacked:true,beginAtZero:true,ticks:{callback:function(v){return v+'%';}},grid:{color:'#f1f3f4'}},y:{stacked:true,grid:{display:false}}}}});
+
+  // Supplier trend
+  var months=['Oct','Nov','Dec','Jan','Feb','Mar'];
+  new Chart(document.getElementById('ch_supp_trend'),{type:'line',data:{labels:months,datasets:[
+    {label:'Circet',data:[15.2,16.8,17.1,17.9,18.0,18.4],borderColor:'#C8102E',pointRadius:2,tension:0.3},
+    {label:'Clarke Telecom',data:[10.1,10.8,11.2,11.5,11.8,12.1],borderColor:'#d97706',pointRadius:2,tension:0.3},
+    {label:'ICS',data:[9.5,10.1,10.8,11.0,11.4,11.8],borderColor:'#4a8abf',pointRadius:2,tension:0.3},
+    {label:'WHP',data:[4.1,3.8,3.5,3.4,3.3,3.2],borderColor:'#166534',pointRadius:2,tension:0.3}
+  ]},options:{maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:9,padding:8}}},scales:{y:{ticks:{callback:function(v){return v+'%';}},grid:{color:'#f1f3f4'}},x:{grid:{display:false}}}}});
+
+  // RF code bar
+  var rfCodes=['N01B-M3-2-v1','N01A-M4-1-v1','E01A-M3-1-v1','E01A-M2-1-v1','N01A-M2-1-v1','E01A-M4-1-v1','N01A-M3-1-v1','E01B-M2-1-v1','N01B-M3-1-v1','E02A-M2-1-v1'];
+  var rfCounts=[14,12,11,10,9,8,7,6,5,4];
+  var rfColors=rfCodes.map(function(c){return c.startsWith('N')?'#2a5f8f':'#1a2d4f';});
+  new Chart(document.getElementById('ch_rf_code'),{type:'bar',data:{labels:rfCodes,datasets:[{data:rfCounts,backgroundColor:rfColors,borderRadius:3}]},options:{maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'#f1f3f4'}},x:{grid:{display:false},ticks:{maxRotation:45,minRotation:45}}}}});
+
+  // Heatmap
+  var hmRows=['E01A','E01B','E02A','N01A','N01B','N02A'];
+  var hmCols=['Non-std equip','Config mismatch','Unapproved vendor','RF breach'];
+  var hmData=[[5,8,3,2],[3,2,1,4],[1,1,2,1],[7,4,5,3],[4,3,2,6],[2,1,1,1]];
+  var maxVal=8;
+  function hmColor(v){if(v===0)return '#fff';var t=v/maxVal;return 'rgba(200,16,46,'+(.15+t*.7)+')';}
+  var hhtml='<div class="heatmap-grid" style="grid-template-columns:70px repeat('+hmCols.length+',1fr)">';
+  hhtml+='<div class="hm-cell" style="font-weight:500"></div>';
+  hmCols.forEach(function(c){hhtml+='<div class="hm-cell" style="font-weight:500;font-size:9px">'+c+'</div>';});
+  hmRows.forEach(function(r,ri){
+    hhtml+='<div class="hm-cell" style="font-weight:500;text-align:right">'+r+'</div>';
+    hmData[ri].forEach(function(v){hhtml+='<div class="hm-cell" style="background:'+hmColor(v)+';color:'+(v>3?'#fff':'#212121')+'">'+v+'</div>';});
+  });
+  hhtml+='</div>';
+  document.getElementById('heatmap_rf').innerHTML=hhtml;
+
+  // Supplier table
+  var suppData=[
+    ['Circet',184,34,'18.4%','5.1 days','Non-std equipment','<span style="color:#C8102E">&#9650;</span>'],
+    ['Clarke Telecom',165,20,'12.1%','4.8 days','Config mismatch','<span style="color:#C8102E">&#9650;</span>'],
+    ['ICS',127,15,'11.8%','3.9 days','Non-std equipment','<span style="color:#C8102E">&#9650;</span>'],
+    ['Cornerstone',149,14,'9.4%','4.2 days','Unapproved vendor','<span style="color:#d97706">&#8594;</span>'],
+    ['8point8',110,9,'8.2%','3.5 days','EOL component','<span style="color:#166534">&#9660;</span>'],
+    ['O2',141,10,'7.1%','4.0 days','Config mismatch','<span style="color:#166534">&#9660;</span>'],
+    ['United Living',125,7,'5.6%','3.2 days','GRP deviation','<span style="color:#166534">&#9660;</span>'],
+    ['WHP',156,5,'3.2%','2.8 days','Config mismatch','<span style="color:#166534">&#9660;</span>']
+  ];
+  var sh='';suppData.forEach(function(r){sh+='<tr>';r.forEach(function(c){sh+='<td>'+c+'</td>';});sh+='</tr>';});
+  document.getElementById('tb_supplier').innerHTML=sh;
+}
+
+// ===== FEEDBACK SYSTEM =====
+
+const DASHBOARD_ID = 'US2';
+const DASHBOARD_VERSION = '5.0';
+const FEEDBACK_EMAIL = 'marta@inferencegroup.com';
+
+// Feedback data store
+let feedbackData = {
+  dashboard: DASHBOARD_ID,
+  version: DASHBOARD_VERSION,
+  reviewer: '',
+  date: new Date().toISOString().split('T')[0],
+  overall: [],
+  visuals: []
+};
+
+// Load saved feedback from localStorage
+function loadFeedback(){
+  const saved = localStorage.getItem('fb_' + DASHBOARD_ID);
+  if(saved){
+    try{ feedbackData = JSON.parse(saved); } catch(e){}
+  }
+  renderOverallComments();
+  updateBubbles();
+  updateCount();
+}
+
+// Save feedback to localStorage
+function saveFeedback(){
+  localStorage.setItem('fb_' + DASHBOARD_ID, JSON.stringify(feedbackData));
+  updateCount();
+}
+
+// Toggle feedback mode
+function toggleFeedbackMode(){
+  document.body.classList.toggle('feedback-mode');
+  const btn = document.querySelector('.fb-toggle');
+  btn.classList.toggle('active');
+  btn.textContent = document.body.classList.contains('feedback-mode') ? '\u2715 Exit Feedback' : '\uD83D\uDCAC Feedback';
+}
+
+// Add feedback bubble to all visuals with data-visual-id
+function initFeedbackBubbles(){
+  document.querySelectorAll('[data-visual-id]').forEach(el => {
+    if(el.querySelector('.fb-bubble')) return;
+    el.style.position = 'relative';
+
+    const bubble = document.createElement('button');
+    bubble.className = 'fb-bubble';
+    bubble.innerHTML = '\uD83D\uDCAC';
+    bubble.title = 'Add feedback for: ' + (el.dataset.visualName || el.dataset.visualId);
+    bubble.onclick = function(e){
+      e.stopPropagation();
+      openFeedbackPanel(el);
+    };
+    el.appendChild(bubble);
+  });
+}
+
+// Open feedback input panel for a visual
+function openFeedbackPanel(el){
+  document.querySelectorAll('.fb-input-panel.open').forEach(p => p.classList.remove('open'));
+
+  let panel = el.querySelector('.fb-input-panel');
+  if(!panel){
+    panel = document.createElement('div');
+    panel.className = 'fb-input-panel';
+
+    const vid = el.dataset.visualId;
+    const vname = el.dataset.visualName || vid;
+    const tab = el.closest('[data-tab]')?.dataset.tab || 'Unknown';
+
+    const existing = feedbackData.visuals.filter(v => v.id === vid);
+    let existingHtml = '';
+    if(existing.length > 0){
+      existingHtml = '<div class="fb-existing"><strong>Existing comments:</strong><br>' +
+        existing.map((c,i) => '\u2022 [' + c.priority + '] ' + c.type + ': ' + c.comment + ' <button class="fb-remove-comment" onclick="removeVisualComment(\'' + vid + '\',' + i + ',\'' + tab + '\');this.closest(\'.fb-input-panel\').classList.remove(\'open\')">\u2715</button>').join('<br>') +
+        '</div>';
+    }
+
+    panel.innerHTML =
+      '<div style="font-weight:600;margin-bottom:6px;font-size:12px">' + vname + '</div>' +
+      '<div style="color:#757575;margin-bottom:6px">Tab: ' + tab + '</div>' +
+      existingHtml +
+      '<textarea id="fbInput_' + vid + '" placeholder="What should change about this visual?"></textarea>' +
+      '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">' +
+        '<select id="fbType_' + vid + '">' +
+          '<option value="change">\u270F\uFE0F Change</option>' +
+          '<option value="remove">\uD83D\uDDD1\uFE0F Remove</option>' +
+          '<option value="add">\u2795 Add new</option>' +
+          '<option value="question">\u2753 Question</option>' +
+          '<option value="approve">\u2705 Approve</option>' +
+        '</select>' +
+        '<select id="fbPriority_' + vid + '">' +
+          '<option value="high">\uD83D\uDD34 High</option>' +
+          '<option value="medium" selected>\uD83D\uDFE1 Medium</option>' +
+          '<option value="low">\uD83D\uDFE2 Low</option>' +
+        '</select>' +
+        '<button class="fb-cancel" onclick="this.closest(\'.fb-input-panel\').classList.remove(\'open\')">Cancel</button>' +
+        '<button class="fb-save" onclick="saveVisualComment(\'' + vid + '\',\'' + vname + '\',\'' + tab + '\')">Save</button>' +
+      '</div>';
+    el.appendChild(panel);
+  } else {
+    const vid = el.dataset.visualId;
+    const existing = feedbackData.visuals.filter(v => v.id === vid);
+    const existingDiv = panel.querySelector('.fb-existing');
+    if(existing.length > 0){
+      const html = '<div class="fb-existing"><strong>Existing comments:</strong><br>' +
+        existing.map((c,i) => '\u2022 [' + c.priority + '] ' + c.type + ': ' + c.comment + ' <button class="fb-remove-comment" onclick="removeVisualComment(\'' + vid + '\',' + i + ',\'' + (el.closest('[data-tab]')?.dataset.tab||'Unknown') + '\');this.closest(\'.fb-input-panel\').classList.remove(\'open\')">\u2715</button>').join('<br>') +
+        '</div>';
+      if(existingDiv) existingDiv.outerHTML = html;
+      else panel.querySelector('textarea').insertAdjacentHTML('beforebegin', html);
+    } else if(existingDiv){
+      existingDiv.remove();
+    }
+  }
+
+  panel.classList.add('open');
+}
+
+// Save a comment on a visual
+function saveVisualComment(id, name, tab){
+  const comment = document.getElementById('fbInput_' + id)?.value.trim();
+  if(!comment) return;
+
+  feedbackData.visuals.push({
+    id: id,
+    name: name,
+    tab: tab,
+    type: document.getElementById('fbType_' + id)?.value || 'change',
+    comment: comment,
+    priority: document.getElementById('fbPriority_' + id)?.value || 'medium'
+  });
+
+  saveFeedback();
+  updateBubbles();
+
+  const input = document.getElementById('fbInput_' + id);
+  if(input) input.value = '';
+  document.querySelectorAll('.fb-input-panel.open').forEach(p => p.classList.remove('open'));
+}
+
+// Remove a visual comment
+function removeVisualComment(id, index, tab){
+  const matching = feedbackData.visuals.filter(v => v.id === id);
+  if(matching[index]){
+    const globalIndex = feedbackData.visuals.indexOf(matching[index]);
+    feedbackData.visuals.splice(globalIndex, 1);
+    saveFeedback();
+    updateBubbles();
+  }
+}
+
+// Update bubble appearance based on existing comments
+function updateBubbles(){
+  document.querySelectorAll('[data-visual-id]').forEach(el => {
+    const vid = el.dataset.visualId;
+    const bubble = el.querySelector('.fb-bubble');
+    if(!bubble) return;
+    const count = feedbackData.visuals.filter(v => v.id === vid).length;
+    bubble.classList.toggle('has-comment', count > 0);
+    const oldBadge = bubble.querySelector('.fb-badge');
+    if(oldBadge) oldBadge.remove();
+    if(count > 0){
+      const badge = document.createElement('span');
+      badge.className = 'fb-badge';
+      badge.textContent = count;
+      bubble.appendChild(badge);
+    }
+  });
+}
+
+// Add overall dashboard comment
+function addOverallComment(){
+  const input = document.getElementById('fbOverallInput');
+  const priority = document.getElementById('fbOverallPriority');
+  if(!input || !input.value.trim()) return;
+
+  feedbackData.overall.push({
+    comment: input.value.trim(),
+    priority: priority?.value || 'medium'
+  });
+
+  saveFeedback();
+  renderOverallComments();
+  input.value = '';
+}
+
+// Render overall comments list
+function renderOverallComments(){
+  const container = document.getElementById('fbOverallComments');
+  if(!container) return;
+  container.innerHTML = feedbackData.overall.map((c, i) =>
+    '<div class="fb-comment-item">' +
+      '<div>' +
+        '<div class="fb-comment-text">' + c.comment + '</div>' +
+        '<div class="fb-comment-meta">' + (c.priority === 'high' ? '\uD83D\uDD34' : c.priority === 'medium' ? '\uD83D\uDFE1' : '\uD83D\uDFE2') + ' ' + c.priority + ' priority</div>' +
+      '</div>' +
+      '<button class="fb-remove-comment" onclick="removeOverallComment(' + i + ')">\u2715</button>' +
+    '</div>'
+  ).join('');
+}
+
+// Remove overall comment
+function removeOverallComment(index){
+  feedbackData.overall.splice(index, 1);
+  saveFeedback();
+  renderOverallComments();
+}
+
+// Update comment count display
+function updateCount(){
+  const el = document.getElementById('fbCount');
+  if(el) el.textContent = feedbackData.overall.length + feedbackData.visuals.length;
+}
+
+// Export feedback as JSON
+function exportFeedback(){
+  feedbackData.reviewer = prompt('Your name:') || 'Anonymous';
+  feedbackData.date = new Date().toISOString().split('T')[0];
+  const json = JSON.stringify(feedbackData, null, 2);
+  const commentCount = feedbackData.overall.length + feedbackData.visuals.length;
+
+  // Try server submission first
+  fetch('/api/feedback', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: json
+  })
+  .then(r => r.json())
+  .then(data => {
+    if(data.success){
+      showSubmitSuccess(commentCount, feedbackData.reviewer);
+      feedbackData.overall = [];
+      feedbackData.visuals = [];
+      saveFeedback();
+      renderOverallComments();
+      updateBubbles();
+    }
+  })
+  .catch(() => {
+    // No server — still show success (feedback saved to localStorage)
+    showSubmitSuccess(commentCount, feedbackData.reviewer);
+  });
+}
+
+function showSubmitSuccess(count, reviewer){
+  let modal = document.getElementById('fbFallbackModal');
+  if(modal) modal.remove();
+  modal = document.createElement('div');
+  modal.id = 'fbFallbackModal';
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:10000;display:flex;align-items:flex-start;justify-content:center;padding-top:60px';
+  modal.innerHTML =
+    '<div style="background:#fff;border-radius:12px;padding:36px;max-width:420px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.2);font-family:system-ui,sans-serif;text-align:center">' +
+    '<div style="width:56px;height:56px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px">✓</div>' +
+    '<h3 style="font-size:18px;color:#1a2d4f;margin-bottom:8px">Feedback Submitted</h3>' +
+    '<p style="font-size:13px;color:#757575;margin-bottom:6px">' + count + ' comment' + (count!==1?'s':'') + ' from <strong>' + reviewer + '</strong></p>' +
+    '<p style="font-size:12px;color:#757575;margin-bottom:24px">The team will review your comments and get back to you with any questions or updates.</p>' +
+    '<button onclick="document.getElementById(\'fbFallbackModal\').remove()" style="background:#1a2d4f;color:#fff;border:none;padding:10px 28px;border-radius:6px;cursor:pointer;font-size:13px;font-family:inherit">Done</button>' +
+    '</div>';
+  modal.onclick = function(e){ if(e.target === modal) modal.remove(); };
+  document.body.appendChild(modal);
+}
+function startStatusPolling(){
+  const poll=setInterval(()=>{
+    fetch('/api/status/'+DASHBOARD_ID).then(r=>r.json()).then(s=>{
+      if(s.status==='complete'){clearInterval(poll);showStatusBanner('success','Dashboard updated! Refresh to see changes.');
+        const b=document.getElementById('statusBanner');
+        if(b){const btn=document.createElement('button');btn.textContent='Refresh';btn.style.cssText='margin-left:12px;padding:4px 12px;border:none;border-radius:4px;background:#1a2d4f;color:#fff;cursor:pointer;font-size:11px';btn.onclick=()=>location.reload();b.appendChild(btn);}
+      }else if(s.status==='questions_pending'){clearInterval(poll);showStatusBanner('warning','Claude has clarifying questions.');loadQuestions();}
+      else if(s.status==='error'){clearInterval(poll);showStatusBanner('error','Error: '+(s.message||'Failed'));}
+    }).catch(()=>clearInterval(poll));
+  },3000);
+}
+function showStatusBanner(type,message){
+  let b=document.getElementById('statusBanner');
+  if(!b){b=document.createElement('div');b.id='statusBanner';const t=document.querySelector('.topbar');t.parentNode.insertBefore(b,t.nextSibling);}
+  const c={success:{bg:'#dcfce7',border:'#166534',text:'#166534'},warning:{bg:'#fef3c7',border:'#d97706',text:'#92400e'},error:{bg:'#fee2e2',border:'#991b1b',text:'#991b1b'},info:{bg:'#e0f2fe',border:'#0284c7',text:'#0369a1'}}[type]||{bg:'#e0f2fe',border:'#0284c7',text:'#0369a1'};
+  b.style.cssText='padding:10px 18px;font-size:12px;display:flex;align-items:center;gap:8px;background:'+c.bg+';border-bottom:2px solid '+c.border+';color:'+c.text;
+  b.innerHTML=message;
+}
+function loadQuestions(){
+  fetch('/api/questions/'+DASHBOARD_ID).then(r=>r.json()).then(d=>{
+    if(d.questions&&d.questions.length>0)showQuestionsPanel(d.questions);
+  }).catch(()=>{});
+}
+function showQuestionsPanel(questions){
+  let p=document.getElementById('questionsPanel');
+  if(!p){p=document.createElement('div');p.id='questionsPanel';p.style.cssText='background:#fffbeb;border:1px solid #f59e0b;border-radius:8px;padding:16px 20px;margin:14px;font-size:12px';
+    const ref=document.querySelector('.fb-export-bar');
+    if(ref)ref.parentNode.insertBefore(p,ref.nextSibling);
+    else document.querySelector('.topbar').after(p);
+  }
+  p.innerHTML='<h4 style="color:#92400e;margin-bottom:12px;font-size:14px">Clarifying Questions from Claude</h4>'+
+    '<p style="color:#78350f;margin-bottom:12px">Please answer these questions so changes can be applied:</p>'+
+    questions.map((q,i)=>'<div style="background:#fff;border:1px solid #e0e0e0;border-radius:6px;padding:10px;margin-bottom:8px">'+
+      '<div style="font-weight:600;margin-bottom:4px">Q'+(i+1)+': '+q.question+'</div>'+
+      (q.context?'<div style="color:#757575;font-size:11px;margin-bottom:6px">Context: '+q.context+'</div>':'')+
+      '<textarea id="answer_'+i+'" placeholder="Your answer..." style="width:100%;border:1px solid #e0e0e0;border-radius:4px;padding:6px;font-size:11px;font-family:inherit;min-height:40px;margin-top:4px"></textarea></div>').join('')+
+    '<button onclick="submitAnswers('+questions.length+')" style="background:#1a2d4f;color:#fff;border:none;padding:8px 20px;border-radius:4px;cursor:pointer;font-size:12px;margin-top:8px">Submit Answers</button>';
+}
+function submitAnswers(count){
+  const answers=[];for(let i=0;i<count;i++){const el=document.getElementById('answer_'+i);answers.push(el?el.value.trim():'');}
+  fetch('/api/answers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dashboard:DASHBOARD_ID,answers,date:new Date().toISOString().split('T')[0]})})
+  .then(r=>r.json()).then(d=>{
+    if(d.success){const p=document.getElementById('questionsPanel');if(p)p.remove();showStatusBanner('success','Answers submitted! Claude is applying changes...');startStatusPolling();}
+  }).catch(()=>showStatusBanner('error','Could not submit answers.'));
+}
+
+// Clear all feedback
+function clearAllFeedback(){
+  if(!confirm('Clear all feedback comments?')) return;
+  feedbackData.overall = [];
+  feedbackData.visuals = [];
+  saveFeedback();
+  renderOverallComments();
+  updateBubbles();
+}
+
+// Initialise on page load
+document.addEventListener('DOMContentLoaded', function(){
+  initFeedbackBubbles();
+  loadFeedback();
+  fetch('/api/questions/'+DASHBOARD_ID).then(r=>r.json()).then(d=>{
+    if(d.questions&&d.questions.length>0){document.body.classList.add('feedback-mode');
+      const btn=document.querySelector('.fb-toggle');if(btn){btn.classList.add('active');btn.textContent='Exit Feedback';}
+      showStatusBanner('warning','Claude has clarifying questions.');showQuestionsPanel(d.questions);
+    }
+  }).catch(()=>{});
+});
+</script>
+</body>
+</html>

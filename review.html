@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VMO2 — Feedback Review Console</title>
+<style>
+:root{--navy:#1a2d4f;--red:#C8102E;--amber:#d97706;--green:#166534;--bg:#f1f3f4;--card:#fff;--border:#e0e0e0;--text:#212121;--muted:#757575;--font:system-ui,-apple-system,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);min-height:100vh}
+.header{background:var(--navy);padding:20px 28px;color:#fff;display:flex;align-items:center;justify-content:space-between}
+.header h1{font-size:18px;font-weight:500}
+.header-sub{font-size:12px;color:rgba(255,255,255,.5)}
+.header-actions{display:flex;gap:8px}
+.header-actions button{font-size:12px;padding:6px 14px;border-radius:4px;border:none;cursor:pointer;font-family:var(--font);font-weight:500}
+.btn-approve-all{background:var(--green);color:#fff}
+.btn-process{background:var(--amber);color:#000}
+.btn-refresh{background:rgba(255,255,255,.15);color:#fff}
+
+.content{max-width:1100px;margin:24px auto;padding:0 20px}
+
+/* Feedback file selector */
+.file-bar{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
+.file-bar select{font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:4px;background:var(--card);min-width:300px}
+.file-bar .badge{font-size:11px;padding:3px 10px;border-radius:12px;font-weight:500}
+.badge-new{background:#fef3c7;color:#92400e}
+.badge-reviewed{background:#dcfce7;color:#166534}
+.badge-partial{background:#e0f2fe;color:#0369a1}
+
+/* Stats row */
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:12px;text-align:center}
+.stat-val{font-size:22px;font-weight:600;color:var(--navy)}
+.stat-lbl{font-size:11px;color:var(--muted);margin-top:2px}
+
+/* Comment cards */
+.section-title{font-size:13px;font-weight:600;color:var(--navy);margin:20px 0 10px;display:flex;align-items:center;gap:8px}
+.comment-card{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:8px;transition:border-color .2s}
+.comment-card.approved{border-left:4px solid var(--green)}
+.comment-card.rejected{border-left:4px solid var(--red);opacity:.7}
+.comment-card.clarified{border-left:4px solid #0284c7}
+.comment-card.pending{border-left:4px solid var(--amber)}
+
+.comment-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.comment-visual{font-weight:600;font-size:13px;color:var(--navy)}
+.comment-tab{font-size:11px;color:var(--muted);margin-left:8px}
+.comment-type{font-size:10px;padding:2px 8px;border-radius:3px;font-weight:500}
+.type-change{background:#e0f2fe;color:#0369a1}
+.type-remove{background:#fee2e2;color:#991b1b}
+.type-add{background:#dcfce7;color:#166534}
+.type-question{background:#fef3c7;color:#92400e}
+.type-approve{background:#dcfce7;color:#166534}
+
+.comment-body{font-size:12px;color:var(--text);line-height:1.5;margin-bottom:10px;background:#f8f9fa;padding:8px 10px;border-radius:4px}
+.comment-priority{font-size:10px;margin-bottom:10px}
+.priority-high{color:var(--red)}
+.priority-medium{color:var(--amber)}
+.priority-low{color:var(--green)}
+
+/* Action buttons per comment */
+.comment-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.comment-actions button{font-size:11px;padding:4px 12px;border-radius:4px;border:1px solid var(--border);cursor:pointer;font-family:var(--font);transition:all .15s}
+.btn-a{background:#dcfce7;color:#166534;border-color:#bbf7d0}
+.btn-a:hover{background:#166534;color:#fff}
+.btn-r{background:#fee2e2;color:#991b1b;border-color:#fecaca}
+.btn-r:hover{background:#991b1b;color:#fff}
+.btn-c{background:#e0f2fe;color:#0369a1;border-color:#bae6fd}
+.btn-c:hover{background:#0284c7;color:#fff}
+.btn-a.active{background:#166534;color:#fff}
+.btn-r.active{background:#991b1b;color:#fff}
+.btn-c.active{background:#0284c7;color:#fff}
+
+/* Clarification input */
+.clarify-input{display:none;margin-top:8px}
+.clarify-input.open{display:block}
+.clarify-input textarea{width:100%;border:1px solid var(--border);border-radius:4px;padding:6px 8px;font-size:11px;font-family:var(--font);min-height:50px;resize:vertical}
+.clarify-input .clarify-label{font-size:10px;color:var(--muted);margin-bottom:4px}
+
+/* Review status per comment */
+.review-status{font-size:10px;font-weight:500;padding:2px 8px;border-radius:3px}
+.rs-approved{background:#dcfce7;color:#166534}
+.rs-rejected{background:#fee2e2;color:#991b1b}
+.rs-clarified{background:#e0f2fe;color:#0369a1}
+.rs-pending{background:#fef3c7;color:#92400e}
+
+/* Questions from Claude */
+.claude-questions{background:#f0f4fa;border:1px solid #d0daea;border-radius:6px;padding:16px;margin-bottom:20px}
+.claude-questions h4{font-size:13px;color:var(--navy);margin-bottom:10px}
+.cq-item{background:var(--card);border:1px solid var(--border);border-radius:4px;padding:10px;margin-bottom:6px}
+.cq-question{font-weight:500;font-size:12px;margin-bottom:4px}
+.cq-context{font-size:11px;color:var(--muted);margin-bottom:6px}
+
+/* Process bar */
+.process-bar{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:16px;margin-top:24px;display:flex;align-items:center;justify-content:space-between}
+.process-summary{font-size:12px;color:var(--text)}
+.process-summary strong{color:var(--navy)}
+
+/* Empty state */
+.empty{text-align:center;padding:48px;color:var(--muted);font-size:14px}
+
+/* Status banner */
+.status-banner{padding:10px 18px;font-size:12px;display:none;align-items:center;gap:8px}
+.status-banner.visible{display:flex}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>Feedback Review Console</h1>
+    <div class="header-sub">Review client feedback before Claude applies changes</div>
+  </div>
+  <div class="header-actions">
+    <button class="btn-refresh" onclick="refreshFiles()">Refresh</button>
+    <button class="btn-approve-all" onclick="approveAllPending()">Approve All Pending</button>
+    <button class="btn-process" onclick="processApproved()">Process Approved Changes</button>
+  </div>
+</div>
+
+<div id="statusBanner" class="status-banner"></div>
+
+<div class="content">
+  <!-- File selector -->
+  <div class="file-bar">
+    <label style="font-size:12px;color:var(--muted)">Feedback file:</label>
+    <select id="fileSelect" onchange="loadFeedbackFile(this.value)">
+      <option value="">Select feedback to review...</option>
+    </select>
+    <span id="fileBadge" class="badge badge-new" style="display:none"></span>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats" id="statsRow" style="display:none">
+    <div class="stat"><div class="stat-val" id="statTotal">0</div><div class="stat-lbl">Total Comments</div></div>
+    <div class="stat"><div class="stat-val" id="statPending" style="color:var(--amber)">0</div><div class="stat-lbl">Pending Review</div></div>
+    <div class="stat"><div class="stat-val" id="statApproved" style="color:var(--green)">0</div><div class="stat-lbl">Approved</div></div>
+    <div class="stat"><div class="stat-val" id="statRejected" style="color:var(--red)">0</div><div class="stat-lbl">Rejected</div></div>
+    <div class="stat"><div class="stat-val" id="statClarified" style="color:#0284c7">0</div><div class="stat-lbl">Clarified</div></div>
+  </div>
+
+  <!-- Claude questions (if any) -->
+  <div id="claudeQuestions" class="claude-questions" style="display:none">
+    <h4>Clarifying Questions from Claude</h4>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:10px">Claude needs answers before applying changes. Answer below and click "Send Answers to Claude".</p>
+    <div id="claudeQuestionsList"></div>
+    <button onclick="submitClaudeAnswers()" class="btn-process" style="margin-top:10px;padding:8px 18px;border:none;border-radius:4px;cursor:pointer;font-size:12px;font-family:var(--font)">Send Answers to Claude</button>
+  </div>
+
+  <!-- Overall comments -->
+  <div id="overallSection" style="display:none">
+    <div class="section-title">Overall Dashboard Comments</div>
+    <div id="overallComments"></div>
+  </div>
+
+  <!-- Visual comments -->
+  <div id="visualSection" style="display:none">
+    <div class="section-title">Per-Visual Comments</div>
+    <div id="visualComments"></div>
+  </div>
+
+  <!-- Process bar -->
+  <div class="process-bar" id="processBar" style="display:none">
+    <div class="process-summary">
+      <strong id="processCount">0</strong> approved changes ready to process.
+      <span id="processRejected"></span>
+    </div>
+    <button class="btn-process" onclick="processApproved()">Process Approved Changes</button>
+  </div>
+
+  <!-- Empty state -->
+  <div class="empty" id="emptyState">
+    <p>No feedback files found.</p>
+    <p style="font-size:12px;margin-top:8px">When clients submit feedback on dashboards, their comments will appear here for your review.</p>
+    <p style="font-size:12px;margin-top:8px">You can also drop a feedback JSON file here or load from the feedback/ folder.</p>
+  </div>
+</div>
+
+<script>
+let currentFeedback = null;
+let reviewDecisions = {}; // { commentId: { status: 'approved'|'rejected'|'clarified', note: '' } }
+
+// Load available feedback files
+function refreshFiles(){
+  fetch('/api/feedback-files')
+  .then(r => r.json())
+  .then(files => {
+    const select = document.getElementById('fileSelect');
+    select.innerHTML = '<option value="">Select feedback to review...</option>';
+    files.forEach(f => {
+      const opt = document.createElement('option');
+      opt.value = f.file;
+      opt.textContent = f.file + ' (' + f.commentCount + ' comments, ' + f.reviewer + ')';
+      select.appendChild(opt);
+    });
+    if(files.length > 0) document.getElementById('emptyState').style.display = 'none';
+    else document.getElementById('emptyState').style.display = 'block';
+  })
+  .catch(() => {
+    // No server — allow manual file drop
+    document.getElementById('emptyState').innerHTML =
+      '<p>Server not running. Paste feedback JSON below:</p>' +
+      '<textarea id="manualJson" style="width:100%;max-width:600px;height:200px;margin:12px auto;display:block;font-size:11px;font-family:monospace;border:1px solid #e0e0e0;border-radius:4px;padding:8px" placeholder="Paste feedback JSON here..."></textarea>' +
+      '<button onclick="loadManualJson()" style="background:var(--navy);color:#fff;border:none;padding:8px 20px;border-radius:4px;cursor:pointer;font-size:12px">Load Feedback</button>';
+  });
+}
+
+function loadManualJson(){
+  const el = document.getElementById('manualJson');
+  if(!el) return;
+  try{
+    const data = JSON.parse(el.value);
+    currentFeedback = data;
+    reviewDecisions = {};
+    renderFeedback();
+  } catch(e){
+    alert('Invalid JSON: ' + e.message);
+  }
+}
+
+// Load a specific feedback file
+function loadFeedbackFile(filename){
+  if(!filename) return;
+  fetch('/api/feedback-file/' + encodeURIComponent(filename))
+  .then(r => r.json())
+  .then(data => {
+    currentFeedback = data;
+    reviewDecisions = {};
+    // Load existing review decisions if any
+    const reviewFile = filename.replace('.json', '_review.json');
+    fetch('/api/review-file/' + encodeURIComponent(reviewFile))
+    .then(r => r.json())
+    .then(review => { reviewDecisions = review.decisions || {}; renderFeedback(); })
+    .catch(() => renderFeedback());
+  });
+}
+
+// Render all feedback comments
+function renderFeedback(){
+  if(!currentFeedback) return;
+
+  document.getElementById('statsRow').style.display = 'grid';
+  document.getElementById('processBar').style.display = 'flex';
+  document.getElementById('emptyState').style.display = 'none';
+
+  // Render overall comments
+  const overallDiv = document.getElementById('overallComments');
+  const overallSection = document.getElementById('overallSection');
+  if(currentFeedback.overall && currentFeedback.overall.length > 0){
+    overallSection.style.display = 'block';
+    overallDiv.innerHTML = currentFeedback.overall.map((c, i) => renderCommentCard('overall_' + i, {
+      name: 'Overall Dashboard',
+      tab: '-',
+      type: 'change',
+      comment: c.comment,
+      priority: c.priority
+    })).join('');
+  } else {
+    overallSection.style.display = 'none';
+  }
+
+  // Render visual comments
+  const visualDiv = document.getElementById('visualComments');
+  const visualSection = document.getElementById('visualSection');
+  if(currentFeedback.visuals && currentFeedback.visuals.length > 0){
+    visualSection.style.display = 'block';
+    visualDiv.innerHTML = currentFeedback.visuals.map((v, i) => renderCommentCard('visual_' + i, v)).join('');
+  } else {
+    visualSection.style.display = 'none';
+  }
+
+  updateStats();
+}
+
+function renderCommentCard(id, comment){
+  const decision = reviewDecisions[id] || { status: 'pending', note: '' };
+  const statusClass = decision.status;
+  const typeClass = 'type-' + (comment.type || 'change');
+  const priorityClass = 'priority-' + (comment.priority || 'medium');
+
+  return `
+    <div class="comment-card ${statusClass}" id="card_${id}">
+      <div class="comment-header">
+        <div>
+          <span class="comment-visual">${comment.name || 'Unknown'}</span>
+          <span class="comment-tab">${comment.tab || ''}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span class="comment-type ${typeClass}">${comment.type || 'change'}</span>
+          <span class="review-status rs-${decision.status}">${decision.status}</span>
+        </div>
+      </div>
+      <div class="comment-body">${comment.comment}</div>
+      <div class="comment-priority ${priorityClass}">Priority: ${comment.priority || 'medium'}</div>
+      <div class="comment-actions">
+        <button class="btn-a ${decision.status === 'approved' ? 'active' : ''}" onclick="setDecision('${id}','approved')">Approve</button>
+        <button class="btn-r ${decision.status === 'rejected' ? 'active' : ''}" onclick="setDecision('${id}','rejected')">Reject</button>
+        <button class="btn-c ${decision.status === 'clarified' ? 'active' : ''}" onclick="toggleClarify('${id}')">Add Context / Clarify</button>
+      </div>
+      <div class="clarify-input ${decision.status === 'clarified' || decision.note ? 'open' : ''}" id="clarify_${id}">
+        <div class="clarify-label">Your notes (sent to Claude as additional context):</div>
+        <textarea id="note_${id}" oninput="updateNote('${id}')" placeholder="Add context, refine the request, explain why you're approving/rejecting...">${decision.note || ''}</textarea>
+      </div>
+    </div>
+  `;
+}
+
+// Set review decision for a comment
+function setDecision(id, status){
+  if(!reviewDecisions[id]) reviewDecisions[id] = { status: 'pending', note: '' };
+  reviewDecisions[id].status = status;
+
+  // If clarifying, open the note input
+  if(status === 'clarified'){
+    const clarify = document.getElementById('clarify_' + id);
+    if(clarify) clarify.classList.add('open');
+    document.getElementById('note_' + id)?.focus();
+  }
+
+  // Update card styling
+  const card = document.getElementById('card_' + id);
+  if(card){
+    card.className = 'comment-card ' + status;
+    card.querySelector('.rs-approved,.rs-rejected,.rs-clarified,.rs-pending').className = 'review-status rs-' + status;
+    card.querySelector('.rs-' + status).textContent = status;
+    card.querySelectorAll('.comment-actions button').forEach(b => b.classList.remove('active'));
+    if(status === 'approved') card.querySelector('.btn-a').classList.add('active');
+    else if(status === 'rejected') card.querySelector('.btn-r').classList.add('active');
+    else if(status === 'clarified') card.querySelector('.btn-c').classList.add('active');
+  }
+
+  updateStats();
+  autoSaveReview();
+}
+
+function updateNote(id){
+  if(!reviewDecisions[id]) reviewDecisions[id] = { status: 'clarified', note: '' };
+  reviewDecisions[id].note = document.getElementById('note_' + id)?.value || '';
+  autoSaveReview();
+}
+
+function toggleClarify(id){
+  setDecision(id, 'clarified');
+}
+
+// Approve all pending comments
+function approveAllPending(){
+  const allIds = getAllCommentIds();
+  allIds.forEach(id => {
+    if(!reviewDecisions[id] || reviewDecisions[id].status === 'pending'){
+      setDecision(id, 'approved');
+    }
+  });
+  renderFeedback();
+}
+
+function getAllCommentIds(){
+  const ids = [];
+  if(currentFeedback.overall) currentFeedback.overall.forEach((_, i) => ids.push('overall_' + i));
+  if(currentFeedback.visuals) currentFeedback.visuals.forEach((_, i) => ids.push('visual_' + i));
+  return ids;
+}
+
+// Update stats
+function updateStats(){
+  const allIds = getAllCommentIds();
+  const total = allIds.length;
+  let approved = 0, rejected = 0, clarified = 0, pending = 0;
+  allIds.forEach(id => {
+    const d = reviewDecisions[id];
+    if(!d || d.status === 'pending') pending++;
+    else if(d.status === 'approved') approved++;
+    else if(d.status === 'rejected') rejected++;
+    else if(d.status === 'clarified') clarified++;
+  });
+
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statPending').textContent = pending;
+  document.getElementById('statApproved').textContent = approved;
+  document.getElementById('statRejected').textContent = rejected;
+  document.getElementById('statClarified').textContent = clarified;
+
+  document.getElementById('processCount').textContent = approved + clarified;
+  const rejectedText = rejected > 0 ? rejected + ' rejected (will not be applied).' : '';
+  document.getElementById('processRejected').textContent = rejectedText;
+}
+
+// Auto-save review decisions
+function autoSaveReview(){
+  if(!currentFeedback) return;
+  const filename = document.getElementById('fileSelect').value;
+  if(!filename) return;
+
+  const reviewFilename = filename.replace('.json', '_review.json');
+  fetch('/api/save-review', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      file: reviewFilename,
+      feedback: currentFeedback,
+      decisions: reviewDecisions,
+      reviewer: 'internal',
+      date: new Date().toISOString()
+    })
+  }).catch(() => {}); // Silent fail if no server
+}
+
+// Process approved changes — send to Claude
+function processApproved(){
+  const allIds = getAllCommentIds();
+  const pending = allIds.filter(id => !reviewDecisions[id] || reviewDecisions[id].status === 'pending');
+
+  if(pending.length > 0){
+    if(!confirm(pending.length + ' comments are still pending review. Process only approved/clarified changes?')){
+      return;
+    }
+  }
+
+  // Build filtered feedback with only approved/clarified items + reviewer notes
+  const filtered = {
+    dashboard: currentFeedback.dashboard,
+    version: currentFeedback.version,
+    reviewer: currentFeedback.reviewer,
+    date: currentFeedback.date,
+    internalReviewer: 'Marta',
+    reviewDate: new Date().toISOString().split('T')[0],
+    overall: [],
+    visuals: []
+  };
+
+  currentFeedback.overall?.forEach((c, i) => {
+    const d = reviewDecisions['overall_' + i];
+    if(d && (d.status === 'approved' || d.status === 'clarified')){
+      filtered.overall.push({
+        ...c,
+        reviewStatus: d.status,
+        reviewNote: d.note || ''
+      });
+    }
+  });
+
+  currentFeedback.visuals?.forEach((v, i) => {
+    const d = reviewDecisions['visual_' + i];
+    if(d && (d.status === 'approved' || d.status === 'clarified')){
+      filtered.visuals.push({
+        ...v,
+        reviewStatus: d.status,
+        reviewNote: d.note || ''
+      });
+    }
+  });
+
+  const filteredCount = filtered.overall.length + filtered.visuals.length;
+
+  if(filteredCount === 0){
+    alert('No approved or clarified changes to process.');
+    return;
+  }
+
+  // Try server first
+  fetch('/api/process-reviewed', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(filtered)
+  })
+  .then(r => r.json())
+  .then(data => {
+    if(data.success){
+      showBanner('success', 'Sent ' + filteredCount + ' approved changes to Claude for processing.');
+    }
+  })
+  .catch(() => {
+    // No server — offer to copy the filtered JSON
+    const json = JSON.stringify(filtered, null, 2);
+    navigator.clipboard.writeText(json).then(() => {
+      showBanner('info', filteredCount + ' approved changes copied to clipboard. Paste into Claude Code with: "Process this reviewed feedback following process/feedback_system.md"');
+    }).catch(() => {
+      const w = window.open('', '_blank', 'width=600,height=400');
+      w.document.write('<pre style="font-size:12px;white-space:pre-wrap">' + json + '</pre>');
+    });
+  });
+}
+
+function showBanner(type, message){
+  const b = document.getElementById('statusBanner');
+  const colors = {
+    success: {bg:'#dcfce7',border:'#166534',text:'#166534'},
+    warning: {bg:'#fef3c7',border:'#d97706',text:'#92400e'},
+    error: {bg:'#fee2e2',border:'#991b1b',text:'#991b1b'},
+    info: {bg:'#e0f2fe',border:'#0284c7',text:'#0369a1'}
+  };
+  const c = colors[type] || colors.info;
+  b.style.cssText = 'padding:10px 18px;font-size:12px;display:flex;align-items:center;gap:8px;background:'+c.bg+';border-bottom:2px solid '+c.border+';color:'+c.text;
+  b.className = 'status-banner visible';
+  b.innerHTML = message;
+}
+
+// Drag and drop support
+document.addEventListener('dragover', e => e.preventDefault());
+document.addEventListener('drop', e => {
+  e.preventDefault();
+  const file = e.dataTransfer.files[0];
+  if(file && file.name.endsWith('.json')){
+    const reader = new FileReader();
+    reader.onload = function(ev){
+      try{
+        currentFeedback = JSON.parse(ev.target.result);
+        reviewDecisions = {};
+        renderFeedback();
+      } catch(err){
+        alert('Invalid JSON file');
+      }
+    };
+    reader.readAsText(file);
+  }
+});
+
+// ─── Claude Questions ───
+
+let currentQuestions = null;
+
+function checkForQuestions() {
+  if (!currentFeedback) return;
+  const did = currentFeedback.dashboard;
+  if (!did) return;
+
+  fetch('/api/questions/' + did)
+    .then(r => r.json())
+    .then(data => {
+      const container = document.getElementById('claudeQuestions');
+      const list = document.getElementById('claudeQuestionsList');
+      if (!data.questions || data.questions.length === 0) {
+        container.style.display = 'none';
+        currentQuestions = null;
+        return;
+      }
+      currentQuestions = data;
+      container.style.display = 'block';
+      list.innerHTML = data.questions.map((q, i) =>
+        '<div class="cq-item">' +
+        '<div class="cq-question">' + (q.about ? '<span style="color:var(--amber)">[' + q.about + ']</span> ' : '') + q.question + '</div>' +
+        (q.context ? '<div class="cq-context">Re: ' + q.context + '</div>' : '') +
+        '<textarea id="cq-ans-' + i + '" style="width:100%;border:1px solid var(--border);border-radius:4px;padding:6px 8px;font-size:11px;font-family:var(--font);min-height:40px;resize:vertical" placeholder="Your answer..."></textarea>' +
+        '</div>'
+      ).join('');
+    })
+    .catch(() => {});
+}
+
+function submitClaudeAnswers() {
+  if (!currentQuestions || !currentFeedback) return;
+  const textareas = document.querySelectorAll('[id^="cq-ans-"]');
+  const answers = [];
+  textareas.forEach((ta, i) => answers.push({ questionIndex: i, answer: ta.value }));
+
+  fetch('/api/answers', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ dashboard: currentFeedback.dashboard, answers, answeredBy: 'reviewer' })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      showBanner('success', 'Answers sent — Claude is resuming processing.');
+      document.getElementById('claudeQuestions').style.display = 'none';
+    }
+  });
+}
+
+// Poll for status changes and questions
+function pollDashboardStatus() {
+  if (!currentFeedback || !currentFeedback.dashboard) return;
+  fetch('/api/status/' + currentFeedback.dashboard)
+    .then(r => r.json())
+    .then(s => {
+      if (s.status === 'questions_pending') checkForQuestions();
+      else if (s.status === 'complete') showBanner('success', 'Dashboard updated successfully! Reload the dashboard to see changes.');
+      else if (s.status === 'error') showBanner('error', 'Processing error: ' + (s.message || 'Unknown error'));
+    })
+    .catch(() => {});
+}
+
+setInterval(pollDashboardStatus, 8000);
+
+// Init
+refreshFiles();
+</script>
+</body>
+</html>

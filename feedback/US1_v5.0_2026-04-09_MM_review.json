@@ -1,0 +1,15 @@
+{
+  "file": "US1_v5.0_2026-04-09_MM.json",
+  "decisions": {
+    "0": {
+      "status": "clarified",
+      "note": ""
+    },
+    "1": {
+      "status": "rejected",
+      "note": ""
+    }
+  },
+  "reviewer": "internal",
+  "date": "2026-04-09T11:42:58.187638"
+}

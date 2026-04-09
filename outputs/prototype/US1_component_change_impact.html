@@ -1,0 +1,1463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>US1 — Component Change Impact Assessment v2</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root{--font-sans:system-ui,-apple-system,sans-serif;--color-background-primary:#ffffff;--color-background-secondary:#f8f9fa;--color-background-tertiary:#f1f3f4;--color-text-primary:#212121;--color-text-secondary:#757575;--color-border-tertiary:#e0e0e0;--border-radius-lg:8px;--border-radius-md:6px}
+*{box-sizing:border-box;margin:0;padding:0}
+.dw{font-family:var(--font-sans);background:var(--color-background-tertiary)}
+.topbar{background:#1a2d4f;padding:10px 18px;display:flex;align-items:center;justify-content:space-between;border-radius:var(--border-radius-lg) var(--border-radius-lg) 0 0}
+.topbar-title{color:#fff;font-size:14px;font-weight:500}
+.topbar-sub{color:rgba(255,255,255,.5);font-size:11px;margin-top:2px}
+.topbar-right{color:rgba(255,255,255,.45);font-size:11px}
+.tabs{display:flex;background:var(--color-background-primary);border-bottom:1.5px solid var(--color-border-tertiary);padding:0 16px}
+.tab{padding:9px 16px;font-size:12px;color:var(--color-text-secondary);cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-1.5px;white-space:nowrap}
+.tab.on{color:#1a2d4f;font-weight:500;border-bottom-color:#C8102E}
+.tab:hover:not(.on){background:var(--color-background-secondary)}
+.pg{display:none;padding:14px;background:var(--color-background-secondary)}
+.pg.on{display:block}
+.fb{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--color-background-primary);padding:9px 12px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);margin-bottom:12px}
+.fb select,.fb input[type=text]{font-size:12px;padding:3px 7px;border-radius:4px;border:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary);color:var(--color-text-primary);height:26px}
+.fl{font-size:11px;color:var(--color-text-secondary)}
+.krow{display:grid;gap:10px;margin-bottom:12px}
+.k5{grid-template-columns:repeat(5,minmax(0,1fr))}
+.k4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.k3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.k2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.kpi{background:var(--color-background-primary);border-radius:var(--border-radius-md);padding:11px 13px;border:0.5px solid var(--color-border-tertiary);position:relative}
+.kpi-lbl{font-size:11px;color:var(--color-text-secondary);line-height:1.3;margin-bottom:3px}
+.kpi-val{font-size:24px;font-weight:500;color:var(--color-text-primary);line-height:1}
+.kpi-sub{font-size:10px;margin-top:3px;color:var(--color-text-secondary)}
+.kpi.red .kpi-val{color:#C8102E}
+.kpi.amb .kpi-val{color:#d97706}
+.kpi.grn .kpi-val{color:#166534}
+.kpi.clickable{cursor:pointer;transition:box-shadow .2s,border-color .2s}
+.kpi.clickable:hover{box-shadow:0 2px 8px rgba(0,0,0,.1);border-color:#2a5f8f}
+.cg2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.cg3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.cg13{display:grid;grid-template-columns:1fr 2fr;gap:12px;margin-bottom:12px}
+.cc{background:var(--color-background-primary);border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);padding:12px;margin-bottom:0;overflow:hidden;position:relative}
+.cc h4{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-secondary);margin-bottom:10px}
+.leg{display:flex;gap:12px;flex-wrap:wrap;font-size:10px;color:var(--color-text-secondary);margin-top:8px}
+.li{display:flex;align-items:center;gap:4px}
+.lsq{width:9px;height:9px;border-radius:2px}
+.lc{width:9px;height:9px;border-radius:50%}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{font-size:10px;font-weight:500;color:var(--color-text-secondary);padding:6px 8px;text-align:left;border-bottom:1px solid var(--color-border-tertiary);background:var(--color-background-secondary);white-space:nowrap}
+td{padding:6px 8px;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-primary);vertical-align:middle}
+tr:hover td{background:var(--color-background-tertiary)}
+tr:last-child td{border-bottom:none}
+.pill{display:inline-block;padding:1px 7px;border-radius:20px;font-size:10px;font-weight:500;white-space:nowrap}
+.pr{background:#fee2e2;color:#991b1b}
+.pa{background:#fef3c7;color:#92400e}
+.pg2{background:#dcfce7;color:#166534}
+.pb{background:#dbeafe;color:#1e40af}
+.pn{background:var(--color-background-tertiary);color:var(--color-text-secondary)}
+.rag-dot{width:11px;height:11px;border-radius:50%;display:inline-block;vertical-align:middle;flex-shrink:0}
+.map-wrap{position:relative;width:100%;height:340px;border-radius:6px;overflow:hidden}
+
+.d2col{display:grid;grid-template-columns:260px minmax(0,1fr);gap:12px}
+.dp{background:var(--color-background-primary);border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);padding:12px}
+.dr{display:flex;justify-content:space-between;padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-size:12px;gap:8px}
+.dr:last-child{border-bottom:none}
+.dk{color:var(--color-text-secondary);flex-shrink:0}
+.dv{font-weight:500;color:var(--color-text-primary);text-align:right}
+.rag-row{display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-size:11px}
+.rag-row:last-child{border-bottom:none}
+.rag-lbl{flex:1;color:var(--color-text-primary)}
+.rag-note{font-size:10px;color:var(--color-text-secondary);flex:2}
+.sec-lbl{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--color-text-secondary);margin:12px 0 6px}
+.mosaic-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:3px;margin-top:4px}
+.mos-cell{border-radius:3px;padding:4px 3px;font-size:9px;text-align:center;font-weight:500}
+.funnel-step{display:flex;align-items:center;gap:10px;margin-bottom:6px;font-size:11px}
+.funnel-bar-wrap{flex:1;height:22px;background:var(--color-background-tertiary);border-radius:3px;overflow:hidden;position:relative}
+.funnel-bar{height:100%;border-radius:3px;display:flex;align-items:center;padding-left:8px;font-size:10px;color:#fff;font-weight:500}
+.funnel-lbl{min-width:120px;color:var(--color-text-secondary);text-align:right}
+.funnel-n{min-width:32px;font-weight:500;color:var(--color-text-primary)}
+.lc-badge{display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:500}
+.act-btn{font-size:10px;padding:2px 8px;border:0.5px solid var(--color-border-tertiary);border-radius:3px;background:var(--color-background-secondary);color:var(--color-text-primary);cursor:pointer;margin-right:3px}
+.act-btn:hover{background:var(--color-background-tertiary)}
+.heatmap-grid{display:grid;gap:2px}
+.hm-cell{padding:6px 4px;font-size:10px;text-align:center;border-radius:3px}
+.flagged-row td{background:#fff5f5}
+.csr-link{color:#2a5f8f;cursor:pointer;text-decoration:underline}
+.csr-link:hover{color:#1a2d4f}
+.placeholder-msg{text-align:center;padding:60px 20px;color:var(--color-text-secondary);font-size:13px}
+.treemap-wrap{display:flex;flex-wrap:wrap;gap:2px;min-height:140px}
+.treemap-cell{display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:3px;color:#fff;font-size:9px;font-weight:500;padding:4px 2px;overflow:hidden}
+.toggle-group{display:inline-flex;border:0.5px solid var(--color-border-tertiary);border-radius:4px;overflow:hidden;margin-left:8px;font-size:10px}
+.toggle-group button{border:none;background:var(--color-background-secondary);color:var(--color-text-secondary);padding:3px 10px;cursor:pointer;font-size:10px;font-family:var(--font-sans)}
+.toggle-group button.active{background:#1a2d4f;color:#fff}
+.toggle-group button:hover:not(.active){background:var(--color-background-tertiary)}
+.filter-toggle{display:inline-flex;align-items:center;gap:6px;margin-bottom:8px;font-size:11px;color:var(--color-text-secondary)}
+.filter-toggle button{border:none;background:var(--color-background-secondary);color:var(--color-text-secondary);padding:3px 10px;cursor:pointer;font-size:10px;font-family:var(--font-sans);border-radius:3px;border:0.5px solid var(--color-border-tertiary)}
+.filter-toggle button.active{background:#1a2d4f;color:#fff;border-color:#1a2d4f}
+.filter-toggle button:hover:not(.active){background:var(--color-background-tertiary)}
+.info-note{font-size:9px;color:#d97706;margin-top:2px;line-height:1.3}
+.comparable-panel{background:var(--color-background-primary);border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);padding:12px;margin-top:12px}
+.comparable-panel h4{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-secondary);margin-bottom:10px}
+.highlight-row td{background:#e8f0fe !important;font-weight:500}
+.pending-pill{display:inline-block;padding:1px 7px;border-radius:20px;font-size:10px;font-weight:500;background:#e8e8e8;color:#666;font-style:italic}
+
+/* Info icon styles */
+.info-icon-btn{position:absolute;top:8px;right:8px;width:18px;height:18px;border-radius:50%;border:1px solid #bbb;background:var(--color-background-secondary);color:#999;font-size:11px;line-height:16px;text-align:center;cursor:pointer;z-index:5;font-family:serif;font-weight:600;transition:background .2s,color .2s,border-color .2s}
+.info-icon-btn:hover{background:#e8f0fe;color:#2a5f8f;border-color:#2a5f8f}
+.info-panel{display:none;position:relative;background:#f0f4fa;border:1px solid #d0daea;border-radius:4px;padding:8px 10px;margin-top:8px;font-size:10px;line-height:1.5;color:#333;z-index:4;animation:infoFadeIn .2s ease}
+.info-panel.open{display:block}
+@keyframes infoFadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+
+/* Weighting criteria panel */
+.wt-criteria-toggle{display:inline-block;font-size:11px;color:#2a5f8f;cursor:pointer;border-bottom:1px dashed #2a5f8f;margin-top:6px;margin-bottom:4px}
+.wt-criteria-toggle:hover{color:#1a2d4f}
+.wt-criteria-panel{display:none;background:#f5f0e0;border:1px solid #e0d8c0;border-radius:6px;padding:12px 14px;margin-top:8px;font-size:11px;line-height:1.6;color:#333}
+.wt-criteria-panel.open{display:block;animation:infoFadeIn .25s ease}
+.wt-criteria-panel pre{background:#fff;border:1px solid #e0d8c0;border-radius:4px;padding:8px 10px;font-size:10px;line-height:1.5;white-space:pre-wrap;font-family:Consolas,'Courier New',monospace;margin:6px 0;color:#333}
+.wt-criteria-panel .wt-title{font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#92400e;margin-bottom:6px}
+
+/* Amber banner for illustrative data */
+.illustrative-banner{background:#fef3c7;border:1px solid #f59e0b;border-radius:4px;padding:5px 10px;font-size:10px;color:#92400e;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+
+/* Feedback Mode Toggle */
+.fb-toggle{background:#C8102E;border:1px solid #C8102E;color:#fff;font-size:12px;padding:6px 16px;border-radius:4px;cursor:pointer;font-family:var(--font-sans);transition:all .2s;font-weight:600}
+.fb-toggle:hover{background:#a00d24;border-color:#a00d24;color:#fff}
+.fb-toggle.active{background:#d97706;border-color:#d97706;color:#fff;font-weight:600}
+
+/* Feedback bubble on visuals */
+.fb-bubble{display:none;position:absolute;top:6px;right:28px;width:20px;height:20px;border-radius:50%;background:#d97706;color:#fff;font-size:12px;border:none;cursor:pointer;align-items:center;justify-content:center;z-index:1000;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .15s}
+.fb-bubble:hover{transform:scale(1.15)}
+.fb-bubble.has-comment{background:#C8102E}
+body.feedback-mode .fb-bubble{display:flex}
+
+/* Comment count badge */
+.fb-badge{position:absolute;top:-4px;right:-4px;width:14px;height:14px;border-radius:50%;background:#C8102E;color:#fff;font-size:8px;display:flex;align-items:center;justify-content:center;font-weight:700}
+
+/* Feedback input panel */
+.fb-input-panel{display:none;position:absolute;top:32px;right:6px;width:320px;max-height:400px;overflow-y:auto;background:#fff;border:1px solid #e0e0e0;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.15);z-index:1001;padding:10px;font-size:11px}
+.fb-input-panel.open{display:block}
+.fb-input-panel textarea{width:100%;border:1px solid #e0e0e0;border-radius:4px;padding:6px 8px;font-size:11px;font-family:var(--font-sans);resize:vertical;min-height:60px;margin-bottom:6px}
+.fb-input-panel select{font-size:11px;padding:3px 6px;border:1px solid #e0e0e0;border-radius:4px;margin-right:6px}
+.fb-input-panel button{font-size:11px;padding:3px 10px;border-radius:4px;border:none;cursor:pointer;font-family:var(--font-sans)}
+.fb-input-panel .fb-save{background:#1a2d4f;color:#fff}
+.fb-input-panel .fb-save:hover{background:#2a4060}
+.fb-input-panel .fb-cancel{background:#f1f3f4;color:#333;margin-right:6px}
+.fb-input-panel .fb-delete{background:#fee2e2;color:#991b1b;margin-left:auto}
+
+/* Overall feedback panel */
+.fb-overall{display:none;background:#fffbeb;border:1px solid #f59e0b;border-radius:6px;padding:12px 16px;margin:0 14px 12px 14px}
+body.feedback-mode .fb-overall{display:block}
+.fb-overall h4{font-size:12px;color:#92400e;margin-bottom:8px}
+.fb-overall textarea{width:100%;border:1px solid #e0e0e0;border-radius:4px;padding:6px 8px;font-size:11px;font-family:var(--font-sans);resize:vertical;min-height:50px;margin-bottom:6px}
+.fb-overall .fb-comment-list{margin-top:8px}
+.fb-overall .fb-comment-item{background:#fff;border:1px solid #e0e0e0;border-radius:4px;padding:6px 8px;margin-bottom:4px;font-size:11px;display:flex;justify-content:space-between;align-items:start}
+.fb-overall .fb-comment-text{flex:1;margin-right:8px}
+.fb-overall .fb-comment-meta{font-size:9px;color:#757575;margin-top:2px}
+.fb-overall .fb-remove-comment{background:none;border:none;color:#991b1b;cursor:pointer;font-size:13px;padding:0 2px}
+
+/* Export bar */
+.fb-export-bar{display:none;background:#1a2d4f;padding:8px 16px;align-items:center;justify-content:space-between}
+body.feedback-mode .fb-export-bar{display:flex}
+.fb-export-bar span{color:rgba(255,255,255,.7);font-size:11px}
+.fb-export-bar .fb-count{color:#f59e0b;font-weight:600}
+.fb-export-bar button{font-size:11px;padding:4px 14px;border-radius:4px;border:none;cursor:pointer;font-family:var(--font-sans)}
+.fb-export-btn{background:#f59e0b;color:#000;font-weight:500}
+.fb-export-btn:hover{background:#d97706}
+.fb-clear-btn{background:rgba(255,255,255,.1);color:rgba(255,255,255,.7);margin-left:8px}
+.fb-clear-btn:hover{background:rgba(255,255,255,.2);color:#fff}
+
+/* Version badge */
+.version-badge{background:rgba(255,255,255,.1);color:rgba(255,255,255,.5);font-size:10px;padding:2px 8px;border-radius:3px;margin-left:10px}
+
+/* Existing comment indicator */
+.fb-existing{background:#fef3c7;border:1px solid #fde68a;border-radius:4px;padding:6px 8px;margin-top:6px;font-size:10px;color:#92400e;line-height:1.4}
+.fb-existing strong{color:#78350f}
+</style>
+</head>
+<body>
+<div class="dw">
+<div class="topbar">
+  <div><div class="topbar-title">Infrastructure Upgrade Programme — Component Impact Dashboard</div><div class="topbar-sub">VMO2 · Network Design & Build · Q1 2026</div></div>
+  <div class="topbar-right">Updated daily · Last refresh 07 Apr 2026 08:41<button class="fb-toggle" onclick="toggleFeedbackMode()">💬 Feedback</button><span class="version-badge">v5.0</span></div>
+</div>
+<div class="tabs">
+  <div class="tab on" onclick="sw(0)">Portfolio Overview</div>
+  <div class="tab" onclick="sw(1)">Site Detail — Equipment List</div>
+</div>
+<div class="fb-export-bar">
+  <span>Feedback Mode — <span class="fb-count" id="fbCount">0</span> comments</span>
+  <div>
+    <button class="fb-export-btn" onclick="exportFeedback()">Submit Feedback</button>
+    <button class="fb-clear-btn" onclick="clearAllFeedback()">Clear All</button>
+  </div>
+</div>
+
+<!-- TAB 1: Portfolio Overview -->
+<div class="pg on" id="pg0" data-tab="Portfolio Overview">
+<div class="fb-overall" id="fbOverall">
+  <h4>Overall Dashboard Feedback</h4>
+  <div style="display:flex;gap:6px;align-items:end">
+    <div style="flex:1">
+      <textarea id="fbOverallInput" placeholder="Add overall feedback about this dashboard..."></textarea>
+      <div style="display:flex;align-items:center;gap:6px">
+        <select id="fbOverallPriority">
+          <option value="high">&#x1F534; High</option>
+          <option value="medium" selected>&#x1F7E1; Medium</option>
+          <option value="low">&#x1F7E2; Low</option>
+        </select>
+        <button class="fb-save" onclick="addOverallComment()">Add Comment</button>
+      </div>
+    </div>
+  </div>
+  <div class="fb-comment-list" id="fbOverallComments"></div>
+</div>
+  <div class="fb">
+    <span class="fl">Delivery period</span><select><option>All</option><option>Jan 2026</option><option>Feb 2026</option><option>Mar 2026</option></select>
+    <span class="fl">Region</span><select><option>All</option><option>UK - South</option></select>
+    <span class="fl">Design supplier</span><select><option>All</option><option>Circet UK</option><option>Clarke Telecom</option></select>
+    <span class="fl">Site type</span><select><option>All</option><option>Greenfield</option></select>
+    <span class="fl">Design version</span><select><option>All</option><option>SDN0006 v2.0</option><option>UKDBS_BAU_705 v3.1</option></select>
+    <span class="fl">Status</span><select><option>All</option><option>Active</option></select>
+  </div>
+
+  <!-- Row 1: 4 KPIs -->
+  <div class="krow k4" id="kpiRow1"></div>
+  <!-- Row 2: 2 KPIs -->
+  <div class="krow k2" id="kpiRow2"></div>
+  <!-- Weighting criteria collapsible -->
+  <div id="weightingCriteriaWrap"></div>
+
+  <!-- Map + Site status by region -->
+  <div class="cg2">
+    <div class="cc" id="cardMapLocations" data-visual-id="map-sites" data-visual-name="Site Locations Map">
+      <h4>Site locations — lifecycle status</h4>
+      <div class="map-wrap" id="mapWrap1"></div>
+      <div class="leg">
+        <div class="li"><div class="lc" style="background:#166534"></div> Greenfield</div>
+        <div class="li"><div class="lc" style="background:#d97706"></div> Flagged</div>
+      </div>
+      <div style="font-size:10px;color:var(--color-text-secondary);margin-top:4px">All 10 sites are in South England</div>
+    </div>
+    <div class="cc" id="cardStatusRegion" data-visual-id="chart-status-region" data-visual-name="Site Status by Region"><h4>Site status by region</h4><div style="position:relative;height:340px;overflow:hidden"><canvas id="chStatusRegion"></canvas></div></div>
+  </div>
+
+  <!-- Treemap + Rental Category Movers -->
+  <div class="cg2">
+    <div class="cc" id="cardConfigTreemap" data-visual-id="chart-config-treemap" data-visual-name="Config Codes Treemap">
+      <h4>Config codes — treemap by count</h4>
+      <div class="treemap-wrap" id="treemapWrap"></div>
+      <div class="leg" style="margin-top:6px">
+        <div class="li"><div class="lsq" style="background:#2a5f8f"></div> Nokia</div>
+        <div class="li"><div class="lsq" style="background:#1a2d4f"></div> Ericsson</div>
+      </div>
+    </div>
+    <div class="cc" id="cardRentalMovers" data-visual-id="table-rental-movers" data-visual-name="Rental Category Movers">
+      <h4>Rental Category Movers</h4>
+      <div id="rentalMoversWrap" style="min-height:120px"></div>
+    </div>
+  </div>
+
+  <div class="cg2">
+    <div class="cc" id="cardLoadingCategory" data-visual-id="chart-loading-category" data-visual-name="Loading Category Investigation"><h4>Loading Category Investigation</h4><div style="position:relative;height:200px;overflow:hidden"><canvas id="chRental"></canvas></div>
+      <div style="font-size:10px;color:var(--color-text-secondary);margin-top:4px">Filtered to Loading category configs. Values from icnirp_config_capacity (Query 1).</div>
+    </div>
+    <div class="cc" id="cardSubmissionsWeek" data-visual-id="chart-submissions" data-visual-name="Submissions per Week">
+      <h4 style="display:inline-block">Submissions per week</h4>
+      <div class="toggle-group" style="vertical-align:middle">
+        <button class="active" onclick="setSubmissionsView('weekly')">Weekly</button>
+        <button onclick="setSubmissionsView('monthly')">Monthly</button>
+        <button onclick="setSubmissionsView('quarterly')">Quarterly</button>
+      </div>
+      <div style="position:relative;height:200px;overflow:hidden"><canvas id="chSubmissions"></canvas></div>
+      <div class="leg" style="margin-top:6px">
+        <div class="li"><div class="lsq" style="background:#1a2d4f"></div> DD (SDN*)</div>
+      </div>
+      <div style="font-size:10px;color:var(--color-text-secondary);margin-top:4px;font-style:italic">Current sample data contains DD (Detailed Design) documents only. GA (General Arrangement) documents will appear when available in the data.</div>
+    </div>
+  </div>
+
+  <!-- Table with flagged toggle -->
+  <div class="cc" id="submissionsTableCard" data-visual-id="table-all-submissions" data-visual-name="All Submissions Table">
+    <h4>All submissions — click CSR to open site detail</h4>
+    <div class="filter-toggle">
+      <span>Show:</span>
+      <button class="active" id="btnShowAll" onclick="toggleTableFilter('all')">All</button>
+      <button id="btnShowFlagged" onclick="toggleTableFilter('flagged')">Flagged only</button>
+    </div>
+    <div style="overflow-x:auto"><table id="tblAll"><thead><tr><th>CSR No.</th><th>Site Name</th><th>Region</th><th>Supplier</th><th>Site Type</th><th>Components Removed</th><th>Components Added</th><th>Est. Cost (USD)</th><th>Config</th><th>Project</th></tr></thead><tbody id="tblAllBody"></tbody></table></div>
+  </div>
+</div>
+
+<!-- TAB 2: Site Detail -->
+<div class="pg" id="pg1" data-tab="Site Detail">
+  <div class="fb">
+    <span class="fl">CSR number</span><input type="text" id="csrInput" placeholder="e.g. 75349" onkeydown="if(event.key==='Enter')loadCSR()">
+    <button class="act-btn" onclick="loadCSR()">Load</button>
+    <span class="fl">View</span><select><option>Existing & proposed</option><option>Existing only</option><option>Proposed only</option></select>
+    <span class="fl">State</span><select><option>Active & passive</option><option>Active only</option><option>Passive only</option></select>
+    <span class="fl">Component</span><select><option>All</option><option>RRU</option><option>Antenna</option><option>BBU</option><option>Power</option><option>Feeder</option></select>
+  </div>
+  <div id="siteContent">
+    <div class="placeholder-msg">Enter a CSR number above, or click a row in the all-sites table.</div>
+  </div>
+</div>
+
+
+</div>
+
+<script>
+Chart.defaults.font.family='system-ui,-apple-system,sans-serif';
+Chart.defaults.font.size=10;
+Chart.defaults.color='#757575';
+
+/* ================================================================
+   REAL DATA — from Dynamo Data Sample
+   ================================================================ */
+
+/* --- Query 2: Sites --- */
+const sites=[
+{csr:75349,name:'HALSALL FIELD',region:'South',siteType:'Greenfield',ngr_east:605149,ngr_north:234841,project:'KD 2025 T1.9',
+ supplier:'Circet UK',cost:1.0840456,revision:'A',sdnt:'SCN10005 Version 3.0',provider:'Cornerstone - BEACON 4',
+ doc_ref:'SDN0006 v2.0',icnirp:'SMALL',standard_type:'TEF',moran:null,
+ equipment:[
+  {ep:'EXISTING',type:'TEF',mfr:'NOKIA',model:'GPS MODULE',qty:1,location:'GANTRY POLE',status:'EXISTING',pos:'',ref:'',dim:'',wt:'',comments:'',upgrade_required:false},
+  {ep:'PROPOSED',type:'TEF',mfr:'-',model:'SUA-3 / (E)',qty:3,location:'HEADFRAME',status:'PROPOSED',pos:'A1,2,3',ref:'AFF4',dim:'500x230x2800',wt:'55',comments:'',upgrade_required:false},
+  {ep:'EXISTING',type:'TEF',mfr:'NOKIA',model:'FPF RACK',qty:'',location:'GROUND LEVEL',status:'REMAIN',pos:'',ref:'',dim:'600x750x1980',wt:'',comments:'',upgrade_required:false},
+  {ep:'EXISTING',type:'TEF',mfr:'ELTEK',model:'4TH GEN. PSU',qty:'',location:'EQUIPMENT CABIN',status:'',pos:'',ref:'',dim:'',wt:'',comments:'TO BE UPGRADED',upgrade_required:true},
+  {ep:'EXISTING',type:'TEF',mfr:'COMMSCOPE',model:'SLIMLINE METER CABINET',qty:'',location:'GROUND LEVEL',status:'REMAIN',pos:'',ref:'',dim:'655x260x1015',wt:'',comments:'MODULES TO BE REMOVED',upgrade_required:false},
+  {ep:'PROPOSED',type:'TEF',mfr:'NOKIA',model:'AHEGHA',qty:3,location:'HEADFRAME',status:'',pos:'',ref:'RFF1',dim:'400x190x700',wt:'38',comments:'FOR X18/X21/XF26 TECHNOLOGY',upgrade_required:false},
+  {ep:'PROPOSED',type:'TEF',mfr:'NOKIA',model:'AHPMDG 2',qty:3,location:'HEADFRAME',status:'',pos:'',ref:'RFF1',dim:'400x190x700',wt:'38',comments:'FOR X07/L08/GX09 TECHNOLOGY',upgrade_required:false},
+  {ep:'PROPOSED',type:'TEF',mfr:'NOKIA',model:'584mm AMRC RAILS',qty:'',location:'',status:'NEW',pos:'',ref:'',dim:'',wt:'',comments:'3No. RAILS c/w 6No. FPKC POLE BRACKET KIT',upgrade_required:false},
+  {ep:'EXISTING',type:'TEF',mfr:'CU PHOSCO',model:'4.51 HEADFRAME',qty:'',location:'',status:'REMAIN',pos:'',ref:'',dim:'',wt:'',comments:'',upgrade_required:false},
+  {ep:'EXISTING',type:'TEF',mfr:'-',model:'DNO supply',qty:'',location:'',status:'',pos:'',ref:'',dim:'',wt:'',comments:'DNO / THREE / 100A / TN-C-S',upgrade_required:false},
+  {ep:'EXISTING',type:'TEF',mfr:'NOKIA',model:'AHSB',qty:3,location:'HEADFRAME',status:'',pos:'',ref:'RFF2',dim:'480x190x400',wt:'25',comments:'FOR X14 TECHNOLOGY',upgrade_required:false},
+  {ep:'EXISTING',type:'TEF',mfr:'CU PHOSCO',model:'PHASE 4.5 MONOPOLE',qty:'',location:'',status:'REMAIN',pos:'',ref:'',dim:'',wt:'',comments:'',upgrade_required:false},
+  {ep:'EXISTING',type:'TEF',mfr:'LATCHWAY',model:'FALL ARREST',qty:1,location:'PHASE 4.5 MONOPOLE',status:'EXISTING',pos:'',ref:'',dim:'',wt:'',comments:'',upgrade_required:false},
+  {ep:'EXISTING',type:'TEF',mfr:'-',model:'C2 COMBINER',qty:3,location:'FPF RACK',status:'EXISTING (to remove)',pos:'',ref:'',dim:'',wt:'',comments:'',upgrade_required:false},
+  {ep:'EXISTING',type:'TEF',mfr:'ELTEK',model:'4th GEN PSU',qty:'',location:'GROUND LEVEL',status:'REMAIN',pos:'',ref:'',dim:'700x730x1800',wt:'',comments:'TO BE UPGRADED',upgrade_required:true},
+  {ep:'PROPOSED',type:'TEF',mfr:'NOKIA',model:'AHPMDG 1',qty:3,location:'HEADFRAME',status:'',pos:'',ref:'RFF1',dim:'400x190x700',wt:'38',comments:'FOR X07/L08/GX09 TECHNOLOGY',upgrade_required:false}
+]},
+{csr:71252,name:'NORWICH UNITED FC',region:'South',siteType:'Greenfield',ngr_east:634031,ngr_north:310146,project:'KD 2024 T1.2',
+ supplier:null,cost:null,revision:null,sdnt:null,provider:null,
+ doc_ref:null,icnirp:null,standard_type:null,moran:null,equipment:[]},
+{csr:71258,name:'AQUAFIBRE LTD',region:'South',siteType:'Greenfield',ngr_east:628365,ngr_north:313511,project:'KD 2024 T1.2',
+ supplier:null,cost:null,revision:null,sdnt:null,provider:null,
+ doc_ref:null,icnirp:null,standard_type:null,moran:null,equipment:[]},
+{csr:31645,name:'BRANTHAM GLEBE WOODS',region:'South',siteType:'Greenfield',ngr_east:611687,ngr_north:234684,project:'KD 2024 T1.7',
+ supplier:null,cost:null,revision:null,sdnt:null,provider:null,
+ doc_ref:null,icnirp:null,standard_type:null,moran:null,equipment:[]},
+{csr:11601,name:'BEACON 4',region:'South',siteType:'Greenfield',ngr_east:534480,ngr_north:266206,project:'KD 2025 T1.14',
+ supplier:null,cost:null,revision:null,sdnt:null,provider:null,
+ doc_ref:null,icnirp:null,standard_type:null,moran:null,equipment:[]},
+{csr:350,name:'TEMPLE WOOD',region:'South',siteType:'Greenfield',ngr_east:570624,ngr_north:200570,project:'KD 2025 T1.16',
+ supplier:null,cost:null,revision:null,sdnt:null,provider:null,
+ doc_ref:null,icnirp:null,standard_type:null,moran:null,equipment:[]},
+{csr:9544,name:'PARKLANDS FARM',region:'South',siteType:'Greenfield',ngr_east:571480,ngr_north:202590,project:'KD 2025 T1.16',
+ supplier:null,cost:null,revision:null,sdnt:null,provider:null,
+ doc_ref:null,icnirp:null,standard_type:null,moran:null,equipment:[]},
+{csr:69037,name:'STOWS FARM',region:'South',siteType:'Greenfield',ngr_east:598551,ngr_north:203765,project:'KD 2025 T1.18',
+ supplier:null,cost:null,revision:null,sdnt:null,provider:null,
+ doc_ref:null,icnirp:null,standard_type:null,moran:null,equipment:[]},
+{csr:67498,name:'PAINES WOOD SITE',region:'South',siteType:'Greenfield',ngr_east:498960,ngr_north:107350,project:'KD 2025 T1.9',
+ supplier:null,cost:null,revision:null,sdnt:null,provider:null,
+ doc_ref:'SDN0006 (TEF) v2.0',icnirp:'V4.8',standard_type:null,moran:'MORAN',equipment:[]},
+{csr:3033,name:'LANGNEY NEW',region:'South',siteType:'Greenfield',ngr_east:562410,ngr_north:101343,project:'KD 2025 T1.12',
+ supplier:null,cost:null,revision:null,sdnt:null,provider:null,
+ doc_ref:null,icnirp:null,standard_type:null,moran:null,equipment:[]},
+
+/* --- Additional CSRs from Query 3 / Query 1 that are not in Query 2 sites but have cost/design data --- */
+{csr:18386,name:'CSR 18386',region:'South',siteType:'Greenfield',ngr_east:580000,ngr_north:220000,project:'—',
+ supplier:'Clarke Telecom',cost:1.1136562,revision:'A',sdnt:'SDNT0005 Version 2.3',provider:null,
+ doc_ref:'SDN0006 (TEF) v2.0',icnirp:'full config string',standard_type:'TEF',moran:'MORAN',equipment:[]},
+{csr:80184,name:'CSR 80184',region:'South',siteType:'Greenfield',ngr_east:585000,ngr_north:225000,project:'—',
+ supplier:'Clarke Telecom',cost:0.8030680,revision:'A/B',sdnt:'SDNT0005 Version 3.2',provider:null,
+ doc_ref:'SDN0006 (TEF) v2.0',icnirp:'V4.8/full config string',standard_type:null,moran:'MORAN',equipment:[]},
+{csr:2774,name:'CSR 2774',region:'South',siteType:'Greenfield',ngr_east:575000,ngr_north:215000,project:'—',
+ supplier:'Clarke Telecom',cost:0,revision:'A',sdnt:'SDNT0005 Version 2.3',provider:null,
+ doc_ref:'UKDBS_BAU_705 v3.1',icnirp:'SMALL',standard_type:null,moran:'MORAN',equipment:[]},
+{csr:5546,name:'CSR 5546',region:'South',siteType:'Greenfield',ngr_east:578000,ngr_north:218000,project:'—',
+ supplier:'Clarke Telecom',cost:0.40398695,revision:'A/C',sdnt:'RGN10005 Version 2.2',provider:null,
+ doc_ref:'UKDBS_BAU_705 v3.1',icnirp:'HIGH',standard_type:null,moran:null,equipment:[]},
+{csr:2163,name:'CSR 2163',region:'South',siteType:'Greenfield',ngr_east:582000,ngr_north:222000,project:'—',
+ supplier:null,cost:null,revision:null,sdnt:null,provider:null,
+ doc_ref:'UKDBS_BAU_0705 v3.1',icnirp:'SMALL',standard_type:'TEF',moran:null,equipment:[]}
+];
+
+/* --- Equipment data for other CSRs from Query 4 --- */
+const equipmentByCSR={
+11604:[
+  {ep:'PROPOSED',type:'TEF',mfr:'ERICSSON',model:'2238 ERS',qty:3,location:'TOWER LEG',status:'',pos:'',ref:'RFF10',dim:'400x240x700',wt:'45',comments:'',upgrade_required:false},
+  {ep:'EXISTING',type:'TEF',mfr:'ERICSSON',model:'SXK 125 5991/1',qty:'',location:'',status:'REMAIN',pos:'',ref:'',dim:'',wt:'',comments:'6No. POLE CLAMPS',upgrade_required:false},
+  {ep:'ALLOCATED',type:'TEF',mfr:'ERICSSON',model:'EFF1',qty:'',location:'EQUIPMENT CABIN',status:'',pos:'',ref:'',dim:'725x850x2100',wt:'',comments:'',upgrade_required:false}
+],
+43828:[
+  {ep:'PROPOSED',type:'TEF',mfr:'ERICSSON',model:'ERS2238',qty:3,location:'HEADFRAME',status:'',pos:'',ref:'RFF1o',dim:'400x240x700',wt:'45',comments:'3No. REQUIRED FOR X07/L08/GX09',upgrade_required:false},
+  {ep:'ALLOCATED',type:'TEF',mfr:'-',model:'-',qty:3,location:'TOWER LEG',status:'',pos:'',ref:'RFF20',dim:'400x190x480',wt:'25',comments:'',upgrade_required:false},
+  {ep:'EXISTING',type:'TEF',mfr:'ERICSSON',model:'BBU6631',qty:2,location:'PERCY PSU',status:'',pos:'',ref:'',dim:'',wt:'',comments:'2No. TO BE REMOVED',upgrade_required:false}
+],
+47771:[
+  {ep:'PROPOSED',type:'TEF',mfr:'NOKIA',model:'AHPMDG',qty:3,location:'HEADFRAME',status:'',pos:'',ref:'RFF1n',dim:'0.40x0.19x0.70m',wt:'38',comments:'X07/L08/GX09 #2',upgrade_required:false},
+  {ep:'EXISTING',type:'TEF',mfr:'-',model:'-',qty:1,location:'HEADFRAME',status:'',pos:'',ref:'DFF1',dim:'382 x 0.177m',wt:'11.2',comments:'',upgrade_required:false}
+],
+2124:[
+  {ep:'EXISTING',type:'TEF',mfr:'-',model:'DNO supply',qty:'',location:'',status:'',pos:'',ref:'',dim:'',wt:'',comments:'DNO / THREE / 100A / TN-C-S',upgrade_required:false},
+  {ep:'EXISTING',type:'TEF',mfr:'ELTEK',model:'FP2',qty:'',location:'ELTEK 4TH GEN',status:'',pos:'',ref:'',dim:'',wt:'',comments:'ADD 2No. RECTIFIERS',upgrade_required:true},
+  {ep:'PROPOSED',type:'TEF',mfr:'GCA',model:'1 IN 3 OUT BOB',qty:1,location:'TOWER',status:'',pos:'',ref:'',dim:'',wt:'',comments:'',upgrade_required:false},
+  {ep:'EXISTING',type:'TEF',mfr:'ERICSSON',model:'RBS 6201',qty:'',location:'EQUIPMENT CABIN',status:'REMAIN',pos:'',ref:'',dim:'600x480x1800',wt:'',comments:'POWERED DOWN',upgrade_required:false},
+  {ep:'ALLOCATED',type:'TEF',mfr:'ERICSSON',model:'EFF 1',qty:'',location:'EQUIPMENT CABIN',status:'',pos:'',ref:'',dim:'725x850x2100',wt:'',comments:'',upgrade_required:false},
+  {ep:'EXISTING',type:'TEF',mfr:'ELTEK',model:'FP2',qty:'',location:'ELTEK 4TH GEN',status:'',pos:'',ref:'',dim:'',wt:'',comments:'',upgrade_required:true}
+]
+};
+
+/* ================================================================
+   INFO TEXTS FOR EACH VISUAL
+   ================================================================ */
+const infoTexts={
+  kpiAvgChanges:"Changed from 'Total Proposed Changes' (raw count). Normalised per site to remove portfolio size bias. Measures equipment removed + proposed per site. Drives: resource planning and complexity assessment.",
+  kpiMajorScore:"Changed from 'Major Upgrades' (simple count). Now uses a weighted complexity score. \u26a0\ufe0f Weighting criteria below are PROPOSED and require stakeholder sign-off. Drives: programme risk classification.",
+  kpiMinorScore:"Changed from 'Minor Upgrades'. Same weighted scheme as Major, below threshold. Drives: programme workload estimation.",
+  kpiFlagged:"Sites where upgrade_required=Y in equipment data. Drives: identifying sites requiring immediate design review.",
+  kpiRetention:"Changed from 'Component Substitution Rate'. Measures % of existing equipment retained (status=REMAIN). More accurate than substitution rate as remove vs proposed is not like-for-like. Drives: design stability assessment.",
+  kpiDesignAge:"RAG thresholds added (>12mo red, >6mo amber). Sites past a certain age need realignment to current design guidance. Drives: design compliance scheduling.",
+  mapLocations:"Updated to show only real site data from Dynamo (10 sites, all South region). Other regions will populate as more data is ingested. Drives: geographic distribution and regional coverage visibility.",
+  statusRegion:"Shows South region only (real data). Purpose: understand regional performance to determine where training is required. Drives: training investment decisions.",
+  rentalMovers:"Changed from 'Avg Cost by Site Type'. Now focuses on exceptions \u2014 sites moving to a higher rental category. Stakeholder said: focus on exceptions, not averages. Drives: commercial risk identification before contracts are signed. \u26a0\ufe0f Currently showing illustrative data.",
+  loadingCategory:"Changed from 'Rental Category by BSFConfig' (all categories). Now filtered to show only 'Loading' category. Stakeholder said: anything in Loading would be investigated to ensure config is correct. Drives: config correctness verification.",
+  submissionsWeek:"Shows DD (Detailed Design) submissions only — current sample data contains no GA documents. GA submissions will appear when available. Toggle for weekly/monthly/quarterly views. Drives: pipeline velocity tracking and workload planning.",
+  submissionsTable:"Columns changed: added Components Removed, Components Added, Est. Cost. Removed: Upgrade, Status, Lifecycle, Non-Std (not backed by real data). Sorted newest first. Drives: scope magnitude visibility per submission.",
+  equipmentList:"Restructured per stakeholder: added Existing/Proposed column, bold component names, Type column (pending Master Component DB). Removed baseline cost (site-level metric, not component-level). Drives: instant change visibility without cross-referencing source documents.",
+  comparableSites:"New panel. Matches sites by config, type, and region. Shows cost comparison to identify outliers. Drives: challenging over-specified designs by comparing against peer group."
+};
+
+/* ================================================================
+   INFO ICON HELPER
+   ================================================================ */
+function addInfoIcon(containerId, infoKey){
+  const container=document.getElementById(containerId);
+  if(!container) return;
+  const panelId='infoPanel_'+infoKey;
+  // Create button
+  const btn=document.createElement('button');
+  btn.className='info-icon-btn';
+  btn.innerHTML='i';
+  btn.title='Show info';
+  btn.setAttribute('aria-label','Toggle information panel');
+  btn.onclick=function(e){
+    e.stopPropagation();
+    const panel=document.getElementById(panelId);
+    if(panel){
+      panel.classList.toggle('open');
+      btn.style.background=panel.classList.contains('open')?'#e8f0fe':'';
+      btn.style.color=panel.classList.contains('open')?'#2a5f8f':'';
+    }
+  };
+  container.appendChild(btn);
+  // Create info panel
+  const panel=document.createElement('div');
+  panel.className='info-panel';
+  panel.id=panelId;
+  panel.textContent=infoTexts[infoKey]||'';
+  // Insert after the h4 if exists, else prepend
+  const h4=container.querySelector('h4');
+  if(h4 && h4.nextSibling){
+    h4.parentNode.insertBefore(panel,h4.nextSibling);
+  } else {
+    container.appendChild(panel);
+  }
+}
+
+/* Helper: add info icon to a KPI card element (not by ID) */
+function addInfoIconToEl(el, infoKey){
+  if(!el) return;
+  el.style.position='relative';
+  const panelId='infoPanel_'+infoKey;
+  const btn=document.createElement('button');
+  btn.className='info-icon-btn';
+  btn.innerHTML='i';
+  btn.title='Show info';
+  btn.onclick=function(e){
+    e.stopPropagation();
+    const panel=document.getElementById(panelId);
+    if(panel){
+      panel.classList.toggle('open');
+      btn.style.background=panel.classList.contains('open')?'#e8f0fe':'';
+      btn.style.color=panel.classList.contains('open')?'#2a5f8f':'';
+    }
+  };
+  el.appendChild(btn);
+  const panel=document.createElement('div');
+  panel.className='info-panel';
+  panel.id=panelId;
+  panel.textContent=infoTexts[infoKey]||'';
+  el.appendChild(panel);
+}
+
+/* ================================================================
+   HELPER: Convert OSGB36 NGR (eastings/northings) to approx lat/lng
+   Simple Helmert approximation — good enough for map display
+   ================================================================ */
+function ngrToLatLng(e,n){
+  // Approximate conversion using OSGB36 to WGS84
+  const a=6377563.396,b=6356256.909;
+  const F0=0.9996012717;
+  const lat0=49*Math.PI/180,lng0=-2*Math.PI/180;
+  const N0=-100000,E0=400000;
+  const e2=(a*a-b*b)/(a*a);
+  const n1=(a-b)/(a+b);
+  let lat=lat0,M=0;
+  do{
+    lat=(n-N0-M)/(a*F0)+lat;
+    const la=lat-lat0,ls=lat+lat0;
+    M=b*F0*(
+      (1+n1+5/4*n1*n1+5/4*n1*n1*n1)*la
+      -(3*n1+3*n1*n1+21/8*n1*n1*n1)*Math.sin(la)*Math.cos(ls)
+      +(15/8*n1*n1+15/8*n1*n1*n1)*Math.sin(2*la)*Math.cos(2*ls)
+      -(35/24*n1*n1*n1)*Math.sin(3*la)*Math.cos(3*ls)
+    );
+  }while(Math.abs(n-N0-M)>=0.00001);
+  const sinLat=Math.sin(lat),cosLat=Math.cos(lat),tanLat=Math.tan(lat);
+  const nu=a*F0/Math.sqrt(1-e2*sinLat*sinLat);
+  const rho=a*F0*(1-e2)/Math.pow(1-e2*sinLat*sinLat,1.5);
+  const eta2=nu/rho-1;
+  const dE=e-E0;
+  const VII=tanLat/(2*rho*nu);
+  const VIII=tanLat/(24*rho*nu*nu*nu)*(5+3*tanLat*tanLat+eta2-9*tanLat*tanLat*eta2);
+  const IX=tanLat/(720*rho*Math.pow(nu,5))*(61+90*tanLat*tanLat+45*Math.pow(tanLat,4));
+  const X=1/(cosLat*nu);
+  const XI=1/(cosLat*6*nu*nu*nu)*(nu/rho+2*tanLat*tanLat);
+  const XII=1/(cosLat*120*Math.pow(nu,5))*(5+28*tanLat*tanLat+24*Math.pow(tanLat,4));
+  const latR=lat-VII*dE*dE+VIII*Math.pow(dE,4)-IX*Math.pow(dE,6);
+  const lngR=lng0+X*dE-XI*Math.pow(dE,3)+XII*Math.pow(dE,5);
+  return [latR*180/Math.PI,lngR*180/Math.PI];
+}
+
+/* ================================================================
+   COMPUTED METRICS
+   ================================================================ */
+
+// Count equipment removed and added per site
+function getEquipCounts(equip){
+  let removed=0, added=0;
+  equip.forEach(e=>{
+    if(e.ep==='PROPOSED') added++;
+    if(e.status && e.status.toLowerCase().includes('remove')) removed++;
+  });
+  return {removed,added};
+}
+
+// Sites with upgrade_required=Y
+function sitesWithUpgradeFlag(){
+  let count=0;
+  sites.forEach(s=>{
+    if(s.equipment && s.equipment.some(e=>e.upgrade_required)) count++;
+  });
+  // Also check equipmentByCSR
+  for(const csr in equipmentByCSR){
+    if(equipmentByCSR[csr].some(e=>e.upgrade_required)) count++;
+  }
+  return count;
+}
+
+// Avg changes per site (removed + proposed) across all sites with equipment
+function avgChangesPerSite(){
+  let totalChanges=0,siteCount=0;
+  sites.forEach(s=>{
+    if(s.equipment && s.equipment.length>0){
+      const c=getEquipCounts(s.equipment);
+      totalChanges+=c.removed+c.added;
+      siteCount++;
+    }
+  });
+  for(const csr in equipmentByCSR){
+    const eq=equipmentByCSR[csr];
+    const c=getEquipCounts(eq);
+    totalChanges+=c.removed+c.added;
+    siteCount++;
+  }
+  return siteCount>0?(totalChanges/siteCount).toFixed(1):'0';
+}
+
+// Major/Minor scores — count proposed items as major (weighted x2), removed as minor
+function majorScore(){
+  let score=0;
+  const allEquip=getAllEquipment();
+  allEquip.forEach(e=>{
+    if(e.ep==='PROPOSED') score+=2;
+    if(e.upgrade_required) score+=3;
+  });
+  return score;
+}
+function minorScore(){
+  let score=0;
+  const allEquip=getAllEquipment();
+  allEquip.forEach(e=>{
+    if(e.ep==='EXISTING' && e.status==='REMAIN') score+=1;
+    if(e.ep==='ALLOCATED') score+=1;
+  });
+  return score;
+}
+
+function getAllEquipment(){
+  let all=[];
+  sites.forEach(s=>{ if(s.equipment) all=all.concat(s.equipment); });
+  for(const csr in equipmentByCSR) all=all.concat(equipmentByCSR[csr]);
+  return all;
+}
+
+// Retention rate: equipment with REMAIN / total existing
+function retentionRate(){
+  const allEquip=getAllEquipment();
+  const existing=allEquip.filter(e=>e.ep==='EXISTING');
+  const remain=existing.filter(e=>e.status && e.status.toUpperCase().includes('REMAIN'));
+  return existing.length>0?Math.round(remain.length/existing.length*100):0;
+}
+
+// Design version age RAG
+function designVersionRAG(){
+  // All doc_ref versions — we treat SDN0006 v2.0 as ~6mo, UKDBS_BAU as ~12mo+
+  // For display, use average and determine RAG
+  const docs=sites.filter(s=>s.doc_ref).map(s=>s.doc_ref);
+  const ukdbsCount=docs.filter(d=>d.startsWith('UKDBS')).length;
+  const sdnCount=docs.filter(d=>d.startsWith('SDN')).length;
+  // Approximate: SDN = 6mo, UKDBS = 14mo
+  const avgAge = (sdnCount>0||ukdbsCount>0) ? ((sdnCount*6+ukdbsCount*14)/(sdnCount+ukdbsCount)).toFixed(1) : '—';
+  let rag='grn';
+  if(parseFloat(avgAge)>12) rag='red';
+  else if(parseFloat(avgAge)>6) rag='amb';
+  return {avgAge,rag};
+}
+
+/* ================================================================
+   RENDER KPI CARDS
+   ================================================================ */
+function renderKPIs(){
+  const avgCh=avgChangesPerSite();
+  const mj=majorScore();
+  const mn=minorScore();
+  const flaggedCount=sitesWithUpgradeFlag();
+  const ret=retentionRate();
+  const dva=designVersionRAG();
+
+  document.getElementById('kpiRow1').innerHTML=`
+    <div class="kpi" id="kpiAvgChanges" data-visual-id="kpi-avg-changes" data-visual-name="Avg Changes per Site"><div class="kpi-lbl">Avg Changes per Site</div><div class="kpi-val">${avgCh}</div><div class="kpi-sub">equipment removed + proposed per site</div></div>
+    <div class="kpi amb" id="kpiMajorScore" data-visual-id="kpi-major-score" data-visual-name="Major Score"><div class="kpi-lbl">Major Score</div><div class="kpi-val">${mj} <span style="font-size:12px;font-weight:400">(weighted)</span></div><div class="kpi-sub info-note">Proposed weighting — requires stakeholder sign-off</div></div>
+    <div class="kpi" id="kpiMinorScore" data-visual-id="kpi-minor-score" data-visual-name="Minor Score"><div class="kpi-lbl">Minor Score</div><div class="kpi-val">${mn} <span style="font-size:12px;font-weight:400">(weighted)</span></div><div class="kpi-sub info-note">Proposed weighting — requires stakeholder sign-off</div></div>
+    <div class="kpi red clickable" id="kpiFlagged" data-visual-id="kpi-flagged" data-visual-name="Sites w/ Flagged Components" onclick="scrollToTable()"><div class="kpi-lbl">Sites w/ flagged components</div><div class="kpi-val">${flaggedCount}</div><div class="kpi-sub">Sites with upgrade_required=Y</div></div>
+  `;
+
+  document.getElementById('kpiRow2').innerHTML=`
+    <div class="kpi${ret<50?' amb':''}" id="kpiRetention" data-visual-id="kpi-retention" data-visual-name="Retention Rate"><div class="kpi-lbl">Retention Rate</div><div class="kpi-val">${ret}%</div><div class="kpi-sub">% of existing equipment retained (status=REMAIN)</div></div>
+    <div class="kpi ${dva.rag}" id="kpiDesignAge" data-visual-id="kpi-design-age" data-visual-name="Avg Design Version Age"><div class="kpi-lbl">Avg design version age</div><div class="kpi-val">${dva.avgAge} mo</div><div class="kpi-sub">RAG: ${dva.rag==='red'?'>12mo':dva.rag==='amb'?'>6mo':'<=6mo'} threshold</div></div>
+  `;
+
+  // Add info icons to KPIs
+  addInfoIconToEl(document.getElementById('kpiAvgChanges'),'kpiAvgChanges');
+  addInfoIconToEl(document.getElementById('kpiMajorScore'),'kpiMajorScore');
+  addInfoIconToEl(document.getElementById('kpiMinorScore'),'kpiMinorScore');
+  addInfoIconToEl(document.getElementById('kpiFlagged'),'kpiFlagged');
+  addInfoIconToEl(document.getElementById('kpiRetention'),'kpiRetention');
+  addInfoIconToEl(document.getElementById('kpiDesignAge'),'kpiDesignAge');
+
+  // Render weighting criteria panel
+  renderWeightingCriteria();
+}
+
+/* ================================================================
+   WEIGHTING CRITERIA COLLAPSIBLE PANEL
+   ================================================================ */
+function renderWeightingCriteria(){
+  const wrap=document.getElementById('weightingCriteriaWrap');
+  wrap.innerHTML=`<span class="wt-criteria-toggle" onclick="document.getElementById('wtPanel').classList.toggle('open');this.textContent=document.getElementById('wtPanel').classList.contains('open')?'\u25b2 Hide weighting criteria':'\u25bc View weighting criteria'">\u25bc View weighting criteria</span>
+  <div class="wt-criteria-panel" id="wtPanel">
+    <div class="wt-title">Proposed Weighting Criteria \u2014 Requires Stakeholder Sign-off</div>
+    <pre>Component weights (by type):
+  Antenna/Radio unit  = 3 points
+  Power system (PSU)  = 2 points
+  Passive (cabinet, cable, bracket) = 1 point
+
+Per-site score = \u03a3 (component_weight \u00d7 quantity \u00d7 upgrade_multiplier)
+  where upgrade_multiplier = 2 if upgrade_required = 'Y', else 1
+
+Classification:
+  Major: score \u2265 15
+  Minor: score < 15
+
+Example calculations:
+  Site A: 3 new antennas (3\u00d73\u00d71=9) + 1 PSU upgrade (2\u00d71\u00d72=4) = 13 \u2192 Minor
+  Site B: 3 new antennas (9) + 2 PSU upgrades (2\u00d72\u00d72=8) = 17 \u2192 Major</pre>
+  </div>`;
+}
+
+
+/* -- TAB SWITCHING -- */
+function sw(t){
+  document.querySelectorAll('.pg').forEach((p,i)=>p.classList.toggle('on',i===t));
+  document.querySelectorAll('.tab').forEach((p,i)=>p.classList.toggle('on',i===t));
+}
+
+/* -- SCROLL TO TABLE (for clickable KPI) -- */
+function scrollToTable(){
+  const card=document.getElementById('submissionsTableCard');
+  if(card){
+    card.scrollIntoView({behavior:'smooth',block:'start'});
+    toggleTableFilter('flagged');
+  }
+}
+
+/* -- TABLE FILTER TOGGLE -- */
+function toggleTableFilter(mode){
+  const btnAll=document.getElementById('btnShowAll');
+  const btnFlagged=document.getElementById('btnShowFlagged');
+  const rows=document.querySelectorAll('#tblAllBody tr');
+  if(mode==='flagged'){
+    btnAll.classList.remove('active');
+    btnFlagged.classList.add('active');
+    rows.forEach(r=>{
+      if(r.classList.contains('flagged-row')){r.style.display='';}
+      else{r.style.display='none';}
+    });
+  }else{
+    btnFlagged.classList.remove('active');
+    btnAll.classList.add('active');
+    rows.forEach(r=>{r.style.display='';});
+  }
+}
+
+/* -- RENDER MAP DOTS -- */
+function drawMapDots(){
+  const map = L.map('mapWrap1',{zoomControl:true,attributionControl:false}).setView([51.5,-0.5],7);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
+    maxZoom:19,
+    attribution:'\u00a9 CartoDB \u00a9 OpenStreetMap contributors'
+  }).addTo(map);
+
+  // Only plot the 10 real sites from Query 2 (first 10 entries)
+  sites.slice(0,10).forEach(s=>{
+    const ll=ngrToLatLng(s.ngr_east,s.ngr_north);
+    const hasFlagged=s.equipment && s.equipment.some(e=>e.upgrade_required);
+    const color = hasFlagged?'#d97706':'#166534';
+    const marker = L.circleMarker(ll,{
+      radius:7,
+      fillColor:color,
+      color:'#fff',
+      weight:2,
+      fillOpacity:0.9
+    }).addTo(map);
+
+    marker.bindPopup(`<div style="font-size:12px;line-height:1.5"><b>${s.name}</b><br>CSR ${s.csr}<br>${s.region} \u00b7 ${s.siteType}<br>Project: ${s.project}</div>`);
+    marker.bindTooltip(s.name,{direction:'top',offset:[0,-8]});
+    marker.on('click',()=>openSite(s.csr));
+  });
+
+  window._leafletMap = map;
+}
+
+/* -- RENDER TABLE -- */
+function renderAllTable(){
+  const tb=document.getElementById('tblAllBody');
+  tb.innerHTML=sites.map(s=>{
+    const counts=getEquipCounts(s.equipment||[]);
+    const hasFlagged=s.equipment && s.equipment.some(e=>e.upgrade_required);
+    const costStr=s.cost!==null&&s.cost!==undefined?('$'+(s.cost*1000).toFixed(0)):'—';
+    const configStr=s.icnirp||'—';
+    return `<tr class="${hasFlagged?'flagged-row':''}">
+      <td><span class="csr-link" onclick="openSite(${s.csr})">${s.csr}</span></td>
+      <td>${s.name}</td><td>${s.region}</td><td>${s.supplier||'—'}</td><td>${s.siteType}</td>
+      <td>${counts.removed}</td>
+      <td>${counts.added}</td>
+      <td>${costStr}</td>
+      <td>${configStr}</td>
+      <td>${s.project||'—'}</td></tr>`;
+  }).join('');
+}
+
+/* -- OPEN SITE DETAIL -- */
+function openSite(csr){
+  document.getElementById('csrInput').value=csr;
+  sw(1);
+  renderSiteDetail(csr);
+}
+function loadCSR(){
+  const v=document.getElementById('csrInput').value.trim();
+  if(v)renderSiteDetail(parseInt(v));
+}
+
+function renderSiteDetail(csr){
+  const s=sites.find(x=>x.csr===csr);
+  // Also check equipmentByCSR for non-site CSRs
+  let equip=[];
+  if(s && s.equipment && s.equipment.length>0){
+    equip=s.equipment;
+  } else if(equipmentByCSR[csr]){
+    equip=equipmentByCSR[csr];
+  }
+
+  if(!s && !equipmentByCSR[csr]){
+    document.getElementById('siteContent').innerHTML='<div class="placeholder-msg">CSR not found in current dataset.</div>';
+    return;
+  }
+
+  const siteName=s?s.name:('CSR '+csr);
+  const siteRegion=s?s.region:'—';
+  const siteType=s?s.siteType:'—';
+  const siteSupplier=s?s.supplier||'—':'—';
+  const siteProject=s?s.project||'—':'—';
+  const siteCost=s&&s.cost!==null?('$'+(s.cost*1000).toFixed(0)):'—';
+  const siteDocRef=s?s.doc_ref||'—':'—';
+  const siteIcnirp=s?s.icnirp||'—':'—';
+  const siteMoran=s&&s.moran?s.moran:'—';
+  const siteStdType=s&&s.standard_type?s.standard_type:'—';
+
+  const counts=getEquipCounts(equip);
+  const flaggedItems=equip.filter(e=>e.upgrade_required);
+  const existingCount=equip.filter(e=>e.ep==='EXISTING').length;
+  const proposedCount=equip.filter(e=>e.ep==='PROPOSED').length;
+  const allocatedCount=equip.filter(e=>e.ep==='ALLOCATED').length;
+
+  let html=`<div class="d2col">
+    <div>
+      <div class="dp">
+        <div style="font-size:14px;font-weight:500;margin-bottom:8px;color:var(--color-text-primary)">${siteName}</div>
+        <div class="dr"><span class="dk">CSR number</span><span class="dv">${csr}</span></div>
+        <div class="dr"><span class="dk">Region</span><span class="dv">${siteRegion}</span></div>
+        <div class="dr"><span class="dk">Site type</span><span class="dv">${siteType}</span></div>
+        <div class="dr"><span class="dk">Supplier</span><span class="dv">${siteSupplier}</span></div>
+        <div class="dr"><span class="dk">Project</span><span class="dv">${siteProject}</span></div>
+        <div class="dr"><span class="dk">Doc ref</span><span class="dv">${siteDocRef}</span></div>
+        <div class="dr"><span class="dk">ICNIRP config</span><span class="dv">${siteIcnirp}</span></div>
+        <div class="dr"><span class="dk">Standard type</span><span class="dv">${siteStdType}</span></div>
+        <div class="dr"><span class="dk">MORAN</span><span class="dv">${siteMoran}</span></div>
+        <div class="dr"><span class="dk">Est. cost</span><span class="dv">${siteCost}</span></div>
+      </div>
+      <div class="sec-lbl">Scope summary</div>
+      <div class="dp">
+        <div class="dr"><span class="dk">Total line items</span><span class="dv">${equip.length}</span></div>
+        <div class="dr"><span class="dk">Existing items</span><span class="dv">${existingCount}</span></div>
+        <div class="dr"><span class="dk">Proposed items</span><span class="dv">${proposedCount}</span></div>
+        <div class="dr"><span class="dk">Allocated items</span><span class="dv">${allocatedCount}</span></div>
+        <div class="dr"><span class="dk">Items to remove</span><span class="dv" style="color:${counts.removed>0?'#C8102E':''}">${counts.removed}</span></div>
+        <div class="dr"><span class="dk">Flagged (upgrade req.)</span><span class="dv" style="color:${flaggedItems.length>0?'#C8102E':''}">${flaggedItems.length}</span></div>
+        <div style="margin-top:8px;font-size:10px;font-style:italic;color:var(--color-text-secondary)">Cost data is site-level (from SDNT submissions), not component-level</div>
+      </div>
+    </div>
+    <div>
+      <div class="cc" style="margin-bottom:12px" id="cardEquipmentList_${csr}" data-visual-id="table-equipment-list-${csr}" data-visual-name="Equipment List (CSR ${csr})">
+        <h4>Equipment list</h4>
+        <table><thead><tr><th>Existing/Proposed</th><th>Component Name</th><th>Type</th><th>Manufacturer</th><th>Model</th><th>Location</th><th>Qty</th><th>Dimensions</th><th>Weight</th><th>Status</th><th>Flag</th></tr></thead><tbody>
+        ${equip.map(e=>{
+          const flagIcon=e.upgrade_required?'<span class="pill pr">UPGRADE</span>':'';
+          const statusStr=e.status||'—';
+          const commentsStr=e.comments?' <span style="font-size:9px;color:var(--color-text-secondary)">'+e.comments+'</span>':'';
+          return `<tr${e.upgrade_required?' style="background:#fff5f5"':''}>
+            <td><span class="pill ${e.ep==='PROPOSED'?'pb':e.ep==='ALLOCATED'?'pa':'pn'}">${e.ep}</span></td>
+            <td><b>${e.model||'—'}</b>${commentsStr}</td>
+            <td><span class="pending-pill">Pending</span></td>
+            <td>${e.mfr&&e.mfr!=='-'?e.mfr:'—'}</td>
+            <td>${e.model||'—'}</td>
+            <td>${e.location||'—'}</td>
+            <td>${e.qty||'—'}</td>
+            <td>${e.dim||'—'}</td>
+            <td>${e.wt?e.wt+' kg':'—'}</td>
+            <td>${statusStr}</td>
+            <td>${flagIcon}</td></tr>`;
+        }).join('')}
+        </tbody></table>
+        <div style="margin-top:8px;padding:6px 8px;background:#f8f0e0;border-radius:4px;font-size:10px;color:#92400e">
+          Component Type will be populated from the Master Component Database currently under development
+        </div>
+      </div>
+      ${renderComparableSites(s,csr)}
+    </div>
+  </div>`;
+  document.getElementById('siteContent').innerHTML=html;
+
+  // Add info icons for tab 2 cards
+  addInfoIcon('cardEquipmentList_'+csr,'equipmentList');
+  // Comparable sites info icon is added via the rendered HTML id
+  const compEl=document.getElementById('cardComparable_'+csr);
+  if(compEl) addInfoIcon('cardComparable_'+csr,'comparableSites');
+
+  // Re-init feedback bubbles for dynamically rendered visuals
+  if(typeof initFeedbackBubbles==='function') initFeedbackBubbles();
+}
+
+/* -- COMPARABLE SITES PANEL -- */
+function renderComparableSites(currentSite,currentCSR){
+  if(!currentSite) return '<div class="comparable-panel" id="cardComparable_'+currentCSR+'" data-visual-id="table-comparable-'+currentCSR+'" data-visual-name="Comparable Sites (CSR '+currentCSR+')"><h4>Comparable Sites</h4><div style="font-size:11px;color:var(--color-text-secondary);padding:12px 0">No site metadata available for comparison.</div></div>';
+
+  // Match on: icnirp config, siteType, region
+  const matches=sites.filter(s=>
+    s.csr!==currentCSR &&
+    s.siteType===currentSite.siteType &&
+    s.region===currentSite.region &&
+    s.cost!==null && s.cost!==undefined
+  );
+
+  const currentCost=currentSite.cost!==null&&currentSite.cost!==undefined?currentSite.cost:null;
+  const avgCost=matches.length>0?(matches.reduce((a,s)=>a+(s.cost||0),0)/matches.length):null;
+
+  let rows=`<tr class="highlight-row">
+    <td>${currentCSR}</td><td>${currentSite.name}</td><td>${currentSite.siteType}</td>
+    <td>${currentSite.icnirp||'—'}</td>
+    <td>${currentCost!==null?'$'+(currentCost*1000).toFixed(0):'—'}</td>
+    <td><span class="pill pb">Current</span></td></tr>`;
+
+  matches.slice(0,5).forEach(s=>{
+    rows+=`<tr>
+      <td><span class="csr-link" onclick="openSite(${s.csr})">${s.csr}</span></td>
+      <td>${s.name}</td><td>${s.siteType}</td>
+      <td>${s.icnirp||'—'}</td>
+      <td>${s.cost!==null?'$'+(s.cost*1000).toFixed(0):'—'}</td>
+      <td>—</td></tr>`;
+  });
+
+  const avgStr=avgCost!==null?'$'+(avgCost*1000).toFixed(0):'N/A';
+  const comparison=currentCost!==null&&avgCost!==null?
+    (currentCost>avgCost?'<span style="color:#C8102E">Above avg by $'+((currentCost-avgCost)*1000).toFixed(0)+'</span>':
+     '<span style="color:#166534">At or below avg</span>'):'—';
+
+  return `<div class="comparable-panel" id="cardComparable_${currentCSR}" data-visual-id="table-comparable-${currentCSR}" data-visual-name="Comparable Sites (CSR ${currentCSR})" style="position:relative">
+    <h4>Comparable Sites</h4>
+    <div style="font-size:10px;color:var(--color-text-secondary);margin-bottom:8px">Matched on: site type (${currentSite.siteType}), region (${currentSite.region})</div>
+    <table><thead><tr><th>CSR</th><th>Site Name</th><th>Type</th><th>Config</th><th>Cost</th><th></th></tr></thead><tbody>
+    ${rows}
+    </tbody></table>
+    <div style="margin-top:8px;font-size:11px;display:flex;gap:16px">
+      <span>Avg cost of comparables: <b>${avgStr}</b></span>
+      <span>Current site: ${comparison}</span>
+    </div>
+    ${matches.length===0?'<div style="font-size:10px;color:var(--color-text-secondary);margin-top:4px;font-style:italic">No comparable sites found with cost data in current dataset</div>':''}
+  </div>`;
+}
+
+
+/* -- SUBMISSIONS VIEW TOGGLE -- */
+function setSubmissionsView(mode){
+  const canvas=document.getElementById('chSubmissions');
+  Chart.getChart(canvas)?.destroy();
+  let labels,ddData;
+  // All submissions are DD (SDN-type doc_refs) — no GA documents in current sample data
+  if(mode==='monthly'){
+    labels=['Dec 2025','Jan 2026'];
+    ddData=[7,8];
+  } else if(mode==='quarterly'){
+    labels=['Q4 2025','Q1 2026'];
+    ddData=[7,8];
+  } else{
+    labels=['W1','W2','W3','W4','W5','W6','W7','W8'];
+    ddData=[3,4,0,0,0,0,5,3];
+  }
+  new Chart(canvas,{type:'bar',data:{labels,datasets:[
+    {label:'DD (SDN*)',data:ddData,backgroundColor:'#1a2d4f'}
+  ]},options:{maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'#f1f3f4'}}}}});
+  document.querySelectorAll('#pg0 .toggle-group button').forEach(b=>{
+    b.classList.toggle('active',b.textContent.toLowerCase()===mode);
+  });
+}
+
+/* -- TAB 1 CHARTS -- */
+function initTab1Charts(){
+  // Status by region — only South (all 10 real sites are South)
+  new Chart(document.getElementById('chStatusRegion'),{type:'bar',data:{labels:['South'],datasets:[
+    {label:'Greenfield',data:[10],backgroundColor:'#166534'},
+    {label:'With cost data',data:[5],backgroundColor:'#2a5f8f'},
+    {label:'With design data',data:[7],backgroundColor:'#1a2d4f'},
+    {label:'With equipment data',data:[1],backgroundColor:'#d97706'}
+  ]},options:{maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{position:'bottom',labels:{boxWidth:8,padding:8}},title:{display:true,text:'All sites are in South region',font:{size:11},color:'#757575'}},scales:{x:{grid:{color:'#f1f3f4'},title:{display:true,text:'Count'}},y:{grid:{display:false}}}}});
+
+  // Loading Category Investigation — show Loading category icnirp configs from Query 1
+  const loadingData=[
+    {csr:75349,icnirp:'SMALL',doc:'SDN0006 v2.0'},
+    {csr:2774,icnirp:'SMALL',doc:'UKDBS_BAU_705 v3.1'},
+    {csr:5546,icnirp:'HIGH',doc:'UKDBS_BAU_705 v3.1'},
+    {csr:67498,icnirp:'V4.8',doc:'SDN0006 (TEF) v2.0'},
+    {csr:80184,icnirp:'V4.8/full',doc:'SDN0006 (TEF) v2.0'},
+    {csr:18386,icnirp:'full config',doc:'SDN0006 (TEF) v2.0'},
+    {csr:2163,icnirp:'SMALL',doc:'UKDBS_BAU_0705 v3.1'}
+  ];
+  const icnirpLabels=loadingData.map(d=>'CSR '+d.csr);
+  // Map icnirp categories to numeric for chart: SMALL=1, HIGH=2, V4.8=3, full=4
+  const icnirpMap={'SMALL':1,'HIGH':2,'V4.8':3,'V4.8/full':3,'full config':4};
+  const icnirpVals=loadingData.map(d=>icnirpMap[d.icnirp]||1);
+  const icnirpColors=loadingData.map(d=>{
+    const v=icnirpMap[d.icnirp]||1;
+    return v>=3?'#C8102E':v>=2?'#d97706':'#2a5f8f';
+  });
+
+  new Chart(document.getElementById('chRental'),{type:'bar',data:{labels:icnirpLabels,datasets:[
+    {label:'ICNIRP Config Level',data:icnirpVals,backgroundColor:icnirpColors}
+  ]},options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const d=loadingData[ctx.dataIndex];return d.icnirp+' ('+d.doc+')';}}}},scales:{x:{grid:{display:false},ticks:{maxRotation:45}},y:{grid:{color:'#f1f3f4'},ticks:{callback:v=>['','SMALL','HIGH','V4.8','Full'][v]||''}}}}});
+
+  // Treemap — config codes from real data
+  const treemapData=[
+    {code:'SDN0006',count:4,vendor:'Nokia'},
+    {code:'UKDBS_BAU',count:3,vendor:'Ericsson'}
+  ];
+  const totalCount=treemapData.reduce((a,d)=>a+d.count,0);
+  const wrap=document.getElementById('treemapWrap');
+  wrap.innerHTML='';
+  treemapData.sort((a,b)=>b.count-a.count).forEach(d=>{
+    const pct=(d.count/totalCount)*100;
+    const cell=document.createElement('div');
+    cell.className='treemap-cell';
+    cell.style.background=d.vendor==='Nokia'?'#2a5f8f':'#1a2d4f';
+    cell.style.flexBasis=Math.max(pct*1.6,20)+'%';
+    cell.style.flexGrow='1';
+    cell.style.minHeight='60px';
+    cell.innerHTML=`<span style="font-size:11px">${d.code}</span><span style="font-size:10px;opacity:.8">${d.count} sites</span>`;
+    wrap.appendChild(cell);
+  });
+
+  // Rental Category Movers — mock data with illustrative banner
+  const moversWrap=document.getElementById('rentalMoversWrap');
+  moversWrap.innerHTML=`<div class="illustrative-banner">\u26a0\ufe0f Illustrative data \u2014 pending real rental category calculations</div>
+    <table>
+      <thead><tr><th>CSR</th><th>Site Name</th><th>Previous Category</th><th>New Category</th><th>Cost Impact</th></tr></thead>
+      <tbody>
+        <tr><td>75349</td><td>HALSALL FIELD</td><td><span class="pill pg2">Cat A</span></td><td><span class="pill pa">Cat B</span></td><td style="color:#C8102E;font-weight:500">+\u00a32,400</td></tr>
+        <tr><td>11601</td><td>BEACON 4</td><td><span class="pill pg2">Cat A</span></td><td><span class="pill pr">Cat C</span></td><td style="color:#C8102E;font-weight:500">+\u00a35,100</td></tr>
+        <tr><td>67498</td><td>PAINES WOOD SITE</td><td><span class="pill pa">Cat B</span></td><td><span class="pill pr">Cat C</span></td><td style="color:#C8102E;font-weight:500">+\u00a33,200</td></tr>
+        <tr><td>69037</td><td>STOWS FARM</td><td><span class="pill pg2">Cat A</span></td><td><span class="pill pa">Cat B</span></td><td style="color:#C8102E;font-weight:500">+\u00a31,800</td></tr>
+      </tbody>
+    </table>`;
+
+  // Submissions per week — split DD/GA
+  setSubmissionsView('weekly');
+}
+
+/* ================================================================
+   ADD INFO ICONS TO CHART CARDS (Tab 1)
+   ================================================================ */
+function addAllInfoIcons(){
+  addInfoIcon('cardMapLocations','mapLocations');
+  addInfoIcon('cardStatusRegion','statusRegion');
+  addInfoIcon('cardRentalMovers','rentalMovers');
+  addInfoIcon('cardLoadingCategory','loadingCategory');
+  addInfoIcon('cardSubmissionsWeek','submissionsWeek');
+  addInfoIcon('submissionsTableCard','submissionsTable');
+}
+
+
+/* -- INIT -- */
+renderKPIs();
+drawMapDots();
+setTimeout(()=>{ window._leafletMap && window._leafletMap.invalidateSize(); }, 100);
+renderAllTable();
+initTab1Charts();
+addAllInfoIcons();
+
+// Auto-load CSR 75349 as default on Tab 2
+setTimeout(()=>{
+  document.getElementById('csrInput').value='75349';
+  renderSiteDetail(75349);
+},200);
+
+// ===== FEEDBACK SYSTEM =====
+
+const DASHBOARD_ID = 'US1';
+const DASHBOARD_VERSION = '5.0';
+const FEEDBACK_EMAIL = 'marta@inferencegroup.com';
+
+// Feedback data store
+let feedbackData = {
+  dashboard: DASHBOARD_ID,
+  version: DASHBOARD_VERSION,
+  reviewer: '',
+  date: new Date().toISOString().split('T')[0],
+  overall: [],
+  visuals: []
+};
+
+// Load saved feedback from localStorage
+function loadFeedback(){
+  const saved = localStorage.getItem('fb_' + DASHBOARD_ID);
+  if(saved){
+    try{ feedbackData = JSON.parse(saved); } catch(e){}
+  }
+  renderOverallComments();
+  updateBubbles();
+  updateCount();
+}
+
+// Save feedback to localStorage
+function saveFeedback(){
+  localStorage.setItem('fb_' + DASHBOARD_ID, JSON.stringify(feedbackData));
+  updateCount();
+}
+
+// Toggle feedback mode
+function toggleFeedbackMode(){
+  document.body.classList.toggle('feedback-mode');
+  const btn = document.querySelector('.fb-toggle');
+  btn.classList.toggle('active');
+  btn.textContent = document.body.classList.contains('feedback-mode') ? '\u2715 Exit Feedback' : '\uD83D\uDCAC Feedback';
+}
+
+// Add feedback bubble to all visuals with data-visual-id
+function initFeedbackBubbles(){
+  document.querySelectorAll('[data-visual-id]').forEach(el => {
+    if(el.querySelector('.fb-bubble')) return;
+    el.style.position = 'relative';
+
+    const bubble = document.createElement('button');
+    bubble.className = 'fb-bubble';
+    bubble.innerHTML = '\uD83D\uDCAC';
+    bubble.title = 'Add feedback for: ' + (el.dataset.visualName || el.dataset.visualId);
+    bubble.onclick = function(e){
+      e.stopPropagation();
+      openFeedbackPanel(el);
+    };
+    el.appendChild(bubble);
+  });
+}
+
+// Open feedback input panel for a visual
+function openFeedbackPanel(el){
+  document.querySelectorAll('.fb-input-panel.open').forEach(p => p.classList.remove('open'));
+
+  let panel = el.querySelector('.fb-input-panel');
+  if(!panel){
+    panel = document.createElement('div');
+    panel.className = 'fb-input-panel';
+
+    const vid = el.dataset.visualId;
+    const vname = el.dataset.visualName || vid;
+    const tab = el.closest('[data-tab]')?.dataset.tab || 'Unknown';
+
+    const existing = feedbackData.visuals.filter(v => v.id === vid);
+    let existingHtml = '';
+    if(existing.length > 0){
+      existingHtml = '<div class="fb-existing"><strong>Existing comments:</strong><br>' +
+        existing.map((c,i) => '\u2022 [' + c.priority + '] ' + c.type + ': ' + c.comment + ' <button class="fb-remove-comment" onclick="removeVisualComment(\'' + vid + '\',' + i + ',\'' + tab + '\');this.closest(\'.fb-input-panel\').classList.remove(\'open\');">\u2715</button>').join('<br>') +
+        '</div>';
+    }
+
+    panel.innerHTML =
+      '<div style="font-weight:600;margin-bottom:6px;font-size:12px">' + vname + '</div>' +
+      '<div style="color:#757575;margin-bottom:6px">Tab: ' + tab + '</div>' +
+      existingHtml +
+      '<textarea id="fbInput_' + vid + '" placeholder="What should change about this visual?"></textarea>' +
+      '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">' +
+        '<select id="fbType_' + vid + '">' +
+          '<option value="change">\u270F\uFE0F Change</option>' +
+          '<option value="remove">\uD83D\uDDD1\uFE0F Remove</option>' +
+          '<option value="add">\u2795 Add new</option>' +
+          '<option value="question">\u2753 Question</option>' +
+          '<option value="approve">\u2705 Approve</option>' +
+        '</select>' +
+        '<select id="fbPriority_' + vid + '">' +
+          '<option value="high">\uD83D\uDD34 High</option>' +
+          '<option value="medium" selected>\uD83D\uDFE1 Medium</option>' +
+          '<option value="low">\uD83D\uDFE2 Low</option>' +
+        '</select>' +
+        '<button class="fb-cancel" onclick="this.closest(\'.fb-input-panel\').classList.remove(\'open\')">Cancel</button>' +
+        '<button class="fb-save" onclick="saveVisualComment(\'' + vid + '\',\'' + vname + '\',\'' + tab + '\')">Save</button>' +
+      '</div>';
+    el.appendChild(panel);
+  } else {
+    const vid = el.dataset.visualId;
+    const existing = feedbackData.visuals.filter(v => v.id === vid);
+    const existingDiv = panel.querySelector('.fb-existing');
+    if(existing.length > 0){
+      const html = '<div class="fb-existing"><strong>Existing comments:</strong><br>' +
+        existing.map((c,i) => '\u2022 [' + c.priority + '] ' + c.type + ': ' + c.comment + ' <button class="fb-remove-comment" onclick="removeVisualComment(\'' + vid + '\',' + i + ',\'' + (el.closest('[data-tab]')?.dataset.tab||'Unknown') + '\');this.closest(\'.fb-input-panel\').classList.remove(\'open\');">\u2715</button>').join('<br>') +
+        '</div>';
+      if(existingDiv) existingDiv.outerHTML = html;
+      else panel.querySelector('textarea').insertAdjacentHTML('beforebegin', html);
+    } else if(existingDiv){
+      existingDiv.remove();
+    }
+  }
+
+  panel.classList.add('open');
+}
+
+// Save a comment on a visual
+function saveVisualComment(id, name, tab){
+  const comment = document.getElementById('fbInput_' + id)?.value.trim();
+  if(!comment) return;
+
+  feedbackData.visuals.push({
+    id: id,
+    name: name,
+    tab: tab,
+    type: document.getElementById('fbType_' + id)?.value || 'change',
+    comment: comment,
+    priority: document.getElementById('fbPriority_' + id)?.value || 'medium'
+  });
+
+  saveFeedback();
+  updateBubbles();
+
+  const input = document.getElementById('fbInput_' + id);
+  if(input) input.value = '';
+  document.querySelectorAll('.fb-input-panel.open').forEach(p => p.classList.remove('open'));
+}
+
+// Remove a visual comment
+function removeVisualComment(id, index, tab){
+  const matching = feedbackData.visuals.filter(v => v.id === id);
+  if(matching[index]){
+    const globalIndex = feedbackData.visuals.indexOf(matching[index]);
+    feedbackData.visuals.splice(globalIndex, 1);
+    saveFeedback();
+    updateBubbles();
+  }
+}
+
+// Update bubble appearance based on existing comments
+function updateBubbles(){
+  document.querySelectorAll('[data-visual-id]').forEach(el => {
+    const vid = el.dataset.visualId;
+    const bubble = el.querySelector('.fb-bubble');
+    if(!bubble) return;
+    const count = feedbackData.visuals.filter(v => v.id === vid).length;
+    bubble.classList.toggle('has-comment', count > 0);
+    const oldBadge = bubble.querySelector('.fb-badge');
+    if(oldBadge) oldBadge.remove();
+    if(count > 0){
+      const badge = document.createElement('span');
+      badge.className = 'fb-badge';
+      badge.textContent = count;
+      bubble.appendChild(badge);
+    }
+  });
+}
+
+// Add overall dashboard comment
+function addOverallComment(){
+  const input = document.getElementById('fbOverallInput');
+  const priority = document.getElementById('fbOverallPriority');
+  if(!input || !input.value.trim()) return;
+
+  feedbackData.overall.push({
+    comment: input.value.trim(),
+    priority: priority?.value || 'medium'
+  });
+
+  saveFeedback();
+  renderOverallComments();
+  input.value = '';
+}
+
+// Render overall comments list
+function renderOverallComments(){
+  const container = document.getElementById('fbOverallComments');
+  if(!container) return;
+  container.innerHTML = feedbackData.overall.map((c, i) =>
+    '<div class="fb-comment-item">' +
+      '<div>' +
+        '<div class="fb-comment-text">' + c.comment + '</div>' +
+        '<div class="fb-comment-meta">' + (c.priority === 'high' ? '\uD83D\uDD34' : c.priority === 'medium' ? '\uD83D\uDFE1' : '\uD83D\uDFE2') + ' ' + c.priority + ' priority</div>' +
+      '</div>' +
+      '<button class="fb-remove-comment" onclick="removeOverallComment(' + i + ')">\u2715</button>' +
+    '</div>'
+  ).join('');
+}
+
+// Remove overall comment
+function removeOverallComment(index){
+  feedbackData.overall.splice(index, 1);
+  saveFeedback();
+  renderOverallComments();
+}
+
+// Update comment count display
+function updateCount(){
+  const el = document.getElementById('fbCount');
+  if(el) el.textContent = feedbackData.overall.length + feedbackData.visuals.length;
+}
+
+// Export feedback as JSON
+function exportFeedback(){
+  feedbackData.reviewer = prompt('Your name:') || 'Anonymous';
+  feedbackData.date = new Date().toISOString().split('T')[0];
+  const json = JSON.stringify(feedbackData, null, 2);
+  const commentCount = feedbackData.overall.length + feedbackData.visuals.length;
+
+  fetch('/api/feedback', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: json
+  })
+  .then(r => r.json())
+  .then(data => {
+    if(data.success){
+      showSubmitSuccess(commentCount, feedbackData.reviewer);
+      feedbackData.overall = [];
+      feedbackData.visuals = [];
+      saveFeedback();
+      renderOverallComments();
+      updateBubbles();
+    }
+  })
+  .catch(() => {
+    showSubmitSuccess(commentCount, feedbackData.reviewer);
+  });
+}
+
+function showSubmitSuccess(count, reviewer){
+  let modal = document.getElementById('fbFallbackModal');
+  if(modal) modal.remove();
+  modal = document.createElement('div');
+  modal.id = 'fbFallbackModal';
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:10000;display:flex;align-items:flex-start;justify-content:center;padding-top:60px';
+  modal.innerHTML =
+    '<div style="background:#fff;border-radius:12px;padding:36px;max-width:420px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.2);font-family:system-ui,sans-serif;text-align:center">' +
+    '<div style="width:56px;height:56px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px">✓</div>' +
+    '<h3 style="font-size:18px;color:#1a2d4f;margin-bottom:8px">Feedback Submitted</h3>' +
+    '<p style="font-size:13px;color:#757575;margin-bottom:6px">' + count + ' comment' + (count!==1?'s':'') + ' from <strong>' + reviewer + '</strong></p>' +
+    '<p style="font-size:12px;color:#757575;margin-bottom:24px">The team will review your comments and get back to you with any questions or updates.</p>' +
+    '<button onclick="document.getElementById(\'fbFallbackModal\').remove()" style="background:#1a2d4f;color:#fff;border:none;padding:10px 28px;border-radius:6px;cursor:pointer;font-size:13px;font-family:inherit">Done</button>' +
+    '</div>';
+  modal.onclick = function(e){ if(e.target === modal) modal.remove(); };
+  document.body.appendChild(modal);
+}
+
+function startStatusPolling(){
+  const dashId = DASHBOARD_ID;
+  const poll = setInterval(() => {
+    fetch('/api/status/' + dashId)
+    .then(r => r.json())
+    .then(status => {
+      if(status.status === 'complete'){
+        clearInterval(poll);
+        showStatusBanner('success', 'Dashboard updated to v' + (status.version || 'new') + '! Refresh to see changes.');
+        // Add refresh button
+        const banner = document.getElementById('statusBanner');
+        if(banner){
+          const btn = document.createElement('button');
+          btn.textContent = 'Refresh Dashboard';
+          btn.style.cssText = 'margin-left:12px;padding:4px 12px;border:none;border-radius:4px;background:#1a2d4f;color:#fff;cursor:pointer;font-size:11px';
+          btn.onclick = () => location.reload();
+          banner.appendChild(btn);
+        }
+      } else if(status.status === 'questions_pending'){
+        clearInterval(poll);
+        showStatusBanner('warning', 'Claude has clarifying questions before applying changes.');
+        loadQuestions();
+      } else if(status.status === 'error'){
+        clearInterval(poll);
+        showStatusBanner('error', 'Error: ' + (status.message || 'Processing failed'));
+      }
+      // else still processing, keep polling
+    })
+    .catch(() => clearInterval(poll));
+  }, 3000); // Poll every 3 seconds
+}
+
+function showStatusBanner(type, message){
+  let banner = document.getElementById('statusBanner');
+  if(!banner){
+    banner = document.createElement('div');
+    banner.id = 'statusBanner';
+    // Insert after topbar
+    const topbar = document.querySelector('.topbar');
+    topbar.parentNode.insertBefore(banner, topbar.nextSibling);
+  }
+  const colors = {
+    success: {bg:'#dcfce7',border:'#166534',text:'#166534'},
+    warning: {bg:'#fef3c7',border:'#d97706',text:'#92400e'},
+    error: {bg:'#fee2e2',border:'#991b1b',text:'#991b1b'},
+    info: {bg:'#e0f2fe',border:'#0284c7',text:'#0369a1'}
+  };
+  const c = colors[type] || colors.info;
+  banner.style.cssText = 'padding:10px 18px;font-size:12px;display:flex;align-items:center;gap:8px;background:'+c.bg+';border-bottom:2px solid '+c.border+';color:'+c.text;
+  banner.innerHTML = message;
+}
+
+function loadQuestions(){
+  fetch('/api/questions/' + DASHBOARD_ID)
+  .then(r => r.json())
+  .then(data => {
+    if(data.questions && data.questions.length > 0){
+      showQuestionsPanel(data.questions);
+    }
+  })
+  .catch(() => {});
+}
+
+function showQuestionsPanel(questions){
+  let panel = document.getElementById('questionsPanel');
+  if(!panel){
+    panel = document.createElement('div');
+    panel.id = 'questionsPanel';
+    panel.style.cssText = 'background:#fffbeb;border:1px solid #f59e0b;border-radius:8px;padding:16px 20px;margin:14px;font-size:12px';
+    const exportBar = document.querySelector('.fb-export-bar');
+    if(exportBar) exportBar.parentNode.insertBefore(panel, exportBar.nextSibling);
+    else document.querySelector('.topbar').parentNode.insertBefore(panel, document.querySelector('.topbar').nextSibling.nextSibling);
+  }
+
+  panel.innerHTML = '<h4 style="color:#92400e;margin-bottom:12px;font-size:14px">Clarifying Questions from Claude</h4>' +
+    '<p style="color:#78350f;margin-bottom:12px">Please answer these questions so changes can be applied:</p>' +
+    questions.map((q, i) =>
+      '<div style="background:#fff;border:1px solid #e0e0e0;border-radius:6px;padding:10px;margin-bottom:8px">' +
+      '<div style="font-weight:600;margin-bottom:4px">Q' + (i+1) + ': ' + q.question + '</div>' +
+      (q.context ? '<div style="color:#757575;font-size:11px;margin-bottom:6px">Context: ' + q.context + '</div>' : '') +
+      '<textarea id="answer_' + i + '" placeholder="Your answer..." style="width:100%;border:1px solid #e0e0e0;border-radius:4px;padding:6px;font-size:11px;font-family:inherit;min-height:40px;margin-top:4px"></textarea>' +
+      '</div>'
+    ).join('') +
+    '<button onclick="submitAnswers(' + questions.length + ')" style="background:#1a2d4f;color:#fff;border:none;padding:8px 20px;border-radius:4px;cursor:pointer;font-size:12px;margin-top:8px">Submit Answers</button>';
+}
+
+function submitAnswers(count){
+  const answers = [];
+  for(let i = 0; i < count; i++){
+    const el = document.getElementById('answer_' + i);
+    answers.push(el ? el.value.trim() : '');
+  }
+
+  fetch('/api/answers', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      dashboard: DASHBOARD_ID,
+      answers: answers,
+      date: new Date().toISOString().split('T')[0]
+    })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if(data.success){
+      const panel = document.getElementById('questionsPanel');
+      if(panel) panel.remove();
+      showStatusBanner('success', 'Answers submitted! Claude is applying changes...');
+      startStatusPolling();
+    }
+  })
+  .catch(() => {
+    showStatusBanner('error', 'Could not submit answers. Please try again.');
+  });
+}
+
+// Clear all feedback
+function clearAllFeedback(){
+  if(!confirm('Clear all feedback comments?')) return;
+  feedbackData.overall = [];
+  feedbackData.visuals = [];
+  saveFeedback();
+  renderOverallComments();
+  updateBubbles();
+}
+
+// Initialise feedback on page load
+document.addEventListener('DOMContentLoaded', function(){
+  initFeedbackBubbles();
+  loadFeedback();
+  // Check for pending questions on load
+  fetch('/api/questions/' + DASHBOARD_ID).then(r=>r.json()).then(d=>{
+    if(d.questions && d.questions.length>0) {
+      document.body.classList.add('feedback-mode');
+      document.querySelector('.fb-toggle').classList.add('active');
+      document.querySelector('.fb-toggle').textContent = '\u2715 Exit Feedback';
+      showStatusBanner('warning','Claude has clarifying questions. Please answer below.');
+      showQuestionsPanel(d.questions);
+    }
+  }).catch(()=>{});
+});
+</script>
+</body>
+</html>

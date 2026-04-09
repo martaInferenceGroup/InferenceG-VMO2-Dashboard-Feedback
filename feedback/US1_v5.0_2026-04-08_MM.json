@@ -1,0 +1,17 @@
+{
+  "dashboard": "US1",
+  "version": "5.0",
+  "reviewer": "MM",
+  "date": "2026-04-08",
+  "overall": [],
+  "visuals": [
+    {
+      "id": "kpi-avg-changes",
+      "name": "Avg Changes per Site",
+      "tab": "Portfolio Overview",
+      "type": "change",
+      "comment": "Make this bright pink",
+      "priority": "medium"
+    }
+  ]
+}
