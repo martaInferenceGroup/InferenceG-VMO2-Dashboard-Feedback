@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>US6 — Recovery Forecasting v1.0</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{--font-sans:system-ui,-apple-system,sans-serif;--color-background-primary:#ffffff;--color-background-secondary:#f8f9fa;--color-background-tertiary:#f1f3f4;--color-text-primary:#212121;--color-text-secondary:#757575;--color-border-tertiary:#e0e0e0;--border-radius-lg:8px;--border-radius-md:6px}
+*{box-sizing:border-box;margin:0;padding:0}
+.dw{font-family:var(--font-sans);background:var(--color-background-tertiary)}
+.topbar{background:#1a2d4f;padding:10px 18px;display:flex;align-items:center;justify-content:space-between;border-radius:var(--border-radius-lg) var(--border-radius-lg) 0 0}
+.topbar-title{color:#fff;font-size:14px;font-weight:500}
+.topbar-sub{color:rgba(255,255,255,.5);font-size:11px;margin-top:2px}
+.topbar-right{color:rgba(255,255,255,.45);font-size:11px;display:flex;align-items:center;gap:8px}
+.fb{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--color-background-primary);padding:9px 12px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);margin-bottom:12px}
+.fb select,.fb input[type=text]{font-size:12px;padding:3px 7px;border-radius:4px;border:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary);color:var(--color-text-primary);height:26px}
+.fl{font-size:11px;color:var(--color-text-secondary)}
+.krow{display:grid;gap:10px;margin-bottom:12px}
+.k4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.kpi{background:var(--color-background-primary);border-radius:var(--border-radius-md);padding:11px 13px;border:0.5px solid var(--color-border-tertiary);position:relative}
+.kpi-lbl{font-size:11px;color:var(--color-text-secondary);line-height:1.3;margin-bottom:3px}
+.kpi-val{font-size:24px;font-weight:500;color:var(--color-text-primary);line-height:1}
+.kpi-sub{font-size:10px;margin-top:3px;color:var(--color-text-secondary)}
+.kpi.red .kpi-val{color:#C8102E}
+.kpi.amb .kpi-val{color:#d97706}
+.kpi.grn .kpi-val{color:#166534}
+.cg2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.cc{background:var(--color-background-primary);border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);padding:12px;margin-bottom:0;overflow:hidden;position:relative}
+.cc.full{margin-bottom:12px}
+.cc h4{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-secondary);margin-bottom:10px}
+.leg{display:flex;gap:12px;flex-wrap:wrap;font-size:10px;color:var(--color-text-secondary);margin-top:8px}
+.li{display:flex;align-items:center;gap:4px}
+.lsq{width:9px;height:9px;border-radius:2px}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{font-size:10px;font-weight:500;color:var(--color-text-secondary);padding:6px 8px;text-align:left;border-bottom:1px solid var(--color-border-tertiary);background:var(--color-background-secondary);white-space:nowrap}
+td{padding:6px 8px;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-primary);vertical-align:middle}
+tr:hover td{background:var(--color-background-tertiary)}
+tr:last-child td{border-bottom:none}
+.pill{display:inline-block;padding:1px 7px;border-radius:20px;font-size:10px;font-weight:500;white-space:nowrap}
+.pr{background:#fee2e2;color:#991b1b}
+.pa{background:#fef3c7;color:#92400e}
+.pg2{background:#dcfce7;color:#166534}
+.pb{background:#dbeafe;color:#1e40af}
+.pn{background:var(--color-background-tertiary);color:var(--color-text-secondary)}
+.toggle-group{display:inline-flex;border:0.5px solid var(--color-border-tertiary);border-radius:4px;overflow:hidden;margin-left:8px;font-size:10px}
+.toggle-group button{border:none;background:var(--color-background-secondary);color:var(--color-text-secondary);padding:3px 10px;cursor:pointer;font-size:10px;font-family:var(--font-sans)}
+.toggle-group button.active{background:#1a2d4f;color:#fff}
+.toggle-group button:hover:not(.active){background:var(--color-background-tertiary)}
+.heatmap-grid{display:grid;gap:2px}
+.hm-cell{padding:6px 4px;font-size:10px;text-align:center;border-radius:3px}
+.illustrative-banner{background:#fef3c7;border:1px solid #f59e0b;border-radius:4px;padding:5px 10px;font-size:10px;color:#92400e;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+
+/* Info icon styles */
+.info-icon-btn{position:absolute;top:8px;right:8px;width:18px;height:18px;border-radius:50%;border:1px solid #bbb;background:var(--color-background-secondary);color:#999;font-size:11px;line-height:16px;text-align:center;cursor:pointer;z-index:5;font-family:serif;font-weight:600;transition:background .2s,color .2s,border-color .2s}
+.info-icon-btn:hover{background:#e8f0fe;color:#2a5f8f;border-color:#2a5f8f}
+.info-panel{display:none;position:relative;background:#f0f4fa;border:1px solid #d0daea;border-radius:4px;padding:8px 10px;margin-top:8px;font-size:10px;line-height:1.5;color:#333;z-index:4;animation:infoFadeIn .2s ease}
+.info-panel.open{display:block}
+@keyframes infoFadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+
+/* Feedback Mode Toggle */
+.fb-toggle{background:#C8102E;border:1px solid #C8102E;color:#fff;font-size:12px;padding:6px 16px;border-radius:4px;cursor:pointer;font-family:var(--font-sans);transition:all .2s;font-weight:600}
+.fb-toggle:hover{background:#a00d24;border-color:#a00d24;color:#fff}
+.fb-toggle.active{background:#d97706;border-color:#d97706;color:#fff;font-weight:600}
+
+/* Feedback bubble on visuals */
+.fb-bubble{display:none;position:absolute;top:6px;right:28px;width:20px;height:20px;border-radius:50%;background:#d97706;color:#fff;font-size:12px;border:none;cursor:pointer;align-items:center;justify-content:center;z-index:1000;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .15s}
+.fb-bubble:hover{transform:scale(1.15)}
+.fb-bubble.has-comment{background:#C8102E}
+body.feedback-mode .fb-bubble{display:flex}
+
+/* Comment count badge */
+.fb-badge{position:absolute;top:-4px;right:-4px;width:14px;height:14px;border-radius:50%;background:#C8102E;color:#fff;font-size:8px;display:flex;align-items:center;justify-content:center;font-weight:700}
+
+/* Feedback input panel */
+.fb-input-panel{display:none;position:absolute;top:32px;right:6px;width:320px;max-height:400px;overflow-y:auto;background:#fff;border:1px solid #e0e0e0;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.15);z-index:1001;padding:10px;font-size:11px}
+.fb-input-panel.open{display:block}
+.fb-input-panel textarea{width:100%;border:1px solid #e0e0e0;border-radius:4px;padding:6px 8px;font-size:11px;font-family:var(--font-sans);resize:vertical;min-height:60px;margin-bottom:6px}
+.fb-input-panel select{font-size:11px;padding:3px 6px;border:1px solid #e0e0e0;border-radius:4px;margin-right:6px}
+.fb-input-panel button{font-size:11px;padding:3px 10px;border-radius:4px;border:none;cursor:pointer;font-family:var(--font-sans)}
+.fb-input-panel .fb-save{background:#1a2d4f;color:#fff}
+.fb-input-panel .fb-save:hover{background:#2a4060}
+.fb-input-panel .fb-cancel{background:#f1f3f4;color:#333;margin-right:6px}
+
+/* Overall feedback panel */
+.fb-overall{display:none;background:#fffbeb;border:1px solid #f59e0b;border-radius:6px;padding:12px 16px;margin-bottom:12px}
+body.feedback-mode .fb-overall{display:block}
+.fb-overall h4{font-size:12px;color:#92400e;margin-bottom:8px}
+.fb-overall textarea{width:100%;border:1px solid #e0e0e0;border-radius:4px;padding:6px 8px;font-size:11px;font-family:var(--font-sans);resize:vertical;min-height:50px;margin-bottom:6px}
+.fb-overall .fb-comment-list{margin-top:8px}
+.fb-overall .fb-comment-item{background:#fff;border:1px solid #e0e0e0;border-radius:4px;padding:6px 8px;margin-bottom:4px;font-size:11px;display:flex;justify-content:space-between;align-items:start}
+.fb-overall .fb-comment-text{flex:1;margin-right:8px}
+.fb-overall .fb-comment-meta{font-size:9px;color:#757575;margin-top:2px}
+.fb-overall .fb-remove-comment{background:none;border:none;color:#991b1b;cursor:pointer;font-size:13px;padding:0 2px}
+
+/* Export bar */
+.fb-export-bar{display:none;background:#1a2d4f;padding:8px 16px;align-items:center;justify-content:space-between}
+body.feedback-mode .fb-export-bar{display:flex}
+.fb-export-bar span{color:rgba(255,255,255,.7);font-size:11px}
+.fb-export-bar .fb-count{color:#f59e0b;font-weight:600}
+.fb-export-bar button{font-size:11px;padding:4px 14px;border-radius:4px;border:none;cursor:pointer;font-family:var(--font-sans)}
+.fb-export-btn{background:#f59e0b;color:#000;font-weight:500}
+.fb-export-btn:hover{background:#d97706}
+.fb-clear-btn{background:rgba(255,255,255,.1);color:rgba(255,255,255,.7);margin-left:8px}
+.fb-clear-btn:hover{background:rgba(255,255,255,.2);color:#fff}
+
+/* Version badge */
+.version-badge{background:rgba(255,255,255,.1);color:rgba(255,255,255,.5);font-size:10px;padding:2px 8px;border-radius:3px;margin-left:10px}
+
+/* Existing comment indicator */
+.fb-existing{background:#fef3c7;border:1px solid #fde68a;border-radius:4px;padding:6px 8px;margin-top:6px;font-size:10px;color:#92400e;line-height:1.4}
+.fb-existing strong{color:#78350f}
+
+/* Page container */
+.pg{padding:14px;background:var(--color-background-secondary)}
+
+@media(max-width:900px){
+  .k4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cg2{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="dw">
+<div class="topbar">
+  <div><div class="topbar-title">Infrastructure Upgrade Programme — Recovery Forecasting Dashboard</div><div class="topbar-sub">VMO2 · Network Design & Build · Q1 2026</div></div>
+  <div class="topbar-right">Updated daily · Last refresh 08 Apr 2026 09:15<button class="fb-toggle" onclick="toggleFeedbackMode()">&#x1F4AC; Feedback</button><span class="version-badge">v1.0</span></div>
+</div>
+<div class="fb-export-bar">
+  <span>Feedback Mode — <span class="fb-count" id="fbCount">0</span> comments</span>
+  <div>
+    <button class="fb-export-btn" onclick="exportFeedback()">Submit Feedback</button>
+    <button class="fb-clear-btn" onclick="clearAllFeedback()">Clear All</button>
+  </div>
+</div>
+
+<div class="pg">
+
+<!-- Future-state banner -->
+<div class="illustrative-banner" style="margin-bottom:12px;font-size:11px;padding:8px 12px">
+  &#x26A0;&#xFE0F; <strong>FUTURE-STATE PROTOTYPE — NO LIVE DATA</strong> &nbsp;|&nbsp; Prerequisites: SiteFlo pipeline data, Dynamo DD data integration, recovery tracking system
+</div>
+
+<!-- Overall feedback -->
+<div class="fb-overall" id="fbOverall">
+  <h4>Overall Dashboard Feedback</h4>
+  <div style="display:flex;gap:6px;align-items:end">
+    <div style="flex:1">
+      <textarea id="fbOverallInput" placeholder="Add overall feedback about this dashboard..."></textarea>
+      <div style="display:flex;align-items:center;gap:6px">
+        <select id="fbOverallPriority">
+          <option value="high">&#x1F534; High</option>
+          <option value="medium" selected>&#x1F7E1; Medium</option>
+          <option value="low">&#x1F7E2; Low</option>
+        </select>
+        <button class="fb-save" onclick="addOverallComment()">Add Comment</button>
+      </div>
+    </div>
+  </div>
+  <div class="fb-comment-list" id="fbOverallComments"></div>
+</div>
+
+<!-- Filters -->
+<div class="fb">
+  <span class="fl">Region</span>
+  <select><option>All</option><option>South</option><option>Midlands</option><option>North</option><option>Scotland & NI</option></select>
+  <span class="fl">Timeline</span>
+  <select><option>Next 12 weeks</option><option>Next 4 weeks</option><option>Next 8 weeks</option></select>
+  <span class="fl">Project Type</span>
+  <select><option>All</option><option>KD Upgrade</option><option>Decommission</option><option>Swap</option></select>
+  <span class="fl">Equipment Type</span>
+  <select><option>All</option><option>Antennas</option><option>Radios</option><option>Power</option><option>Cabinets</option><option>Other</option></select>
+</div>
+
+<!-- KPI Row -->
+<div class="krow k4">
+  <div class="kpi" id="kpiForecastVol" data-visual-id="kpi-forecast-volume" data-visual-name="Forecast Removal Volume">
+    <div class="kpi-lbl">Forecast Removal Volume</div>
+    <div class="kpi-val">2,840</div>
+    <div class="kpi-sub">units expected to be removed</div>
+  </div>
+  <div class="kpi amb" id="kpiReuseMatch" data-visual-id="kpi-reuse-match" data-visual-name="Reuse Match Rate">
+    <div class="kpi-lbl">Reuse Match Rate</div>
+    <div class="kpi-val">38%</div>
+    <div class="kpi-sub">demand matchable with recovered stock</div>
+  </div>
+  <div class="kpi" id="kpiForecastAccuracy" data-visual-id="kpi-forecast-accuracy" data-visual-name="Forecast Accuracy">
+    <div class="kpi-lbl">Forecast Accuracy</div>
+    <div class="kpi-val">74%</div>
+    <div class="kpi-sub">forecast vs actual over last quarter</div>
+  </div>
+  <div class="kpi amb" id="kpiTimelineAdherence" data-visual-id="kpi-timeline-adherence" data-visual-name="Timeline Adherence">
+    <div class="kpi-lbl">Timeline Adherence</div>
+    <div class="kpi-val">68%</div>
+    <div class="kpi-sub">removals completed on schedule</div>
+  </div>
+</div>
+
+<!-- Charts Row 1 -->
+<div class="cg2">
+  <!-- Forecast Timeline -->
+  <div class="cc" id="cardForecastTimeline" data-visual-id="chart-forecast-timeline" data-visual-name="Forecast Timeline">
+    <h4 style="display:inline-block">Forecast Timeline — Removal Volumes</h4>
+    <div class="toggle-group" style="vertical-align:middle">
+      <button class="active" onclick="setTimelineView('weekly')">Weekly</button>
+      <button onclick="setTimelineView('monthly')">Monthly</button>
+    </div>
+    <div style="position:relative;height:280px;overflow:hidden"><canvas id="chForecastTimeline"></canvas></div>
+    <div class="leg">
+      <div class="li"><div class="lsq" style="background:#1a2d4f"></div> Antennas</div>
+      <div class="li"><div class="lsq" style="background:#2a5f8f"></div> Radios</div>
+      <div class="li"><div class="lsq" style="background:#d97706"></div> Power</div>
+      <div class="li"><div class="lsq" style="background:#6b7280"></div> Cabinets</div>
+      <div class="li"><div class="lsq" style="background:#9ca3af"></div> Other</div>
+    </div>
+  </div>
+
+  <!-- Demand vs Recovery Match -->
+  <div class="cc" id="cardDemandMatch" data-visual-id="chart-demand-match" data-visual-name="Demand vs Recovery Match">
+    <h4>Demand vs Recovery Match</h4>
+    <div style="position:relative;height:280px;overflow:hidden"><canvas id="chDemandMatch"></canvas></div>
+    <div class="leg">
+      <div class="li"><div class="lsq" style="background:#1a2d4f"></div> New Demand</div>
+      <div class="li"><div class="lsq" style="background:#166534"></div> Recovered (meets demand)</div>
+      <div class="li"><div class="lsq" style="background:#C8102E"></div> Deficit (gap)</div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row 2: Regional Heatmap -->
+<div class="cc full" id="cardRegionalHeatmap" data-visual-id="chart-regional-heatmap" data-visual-name="Regional Removal Heatmap">
+  <h4>Regional Removal Heatmap — Expected Volumes</h4>
+  <div id="heatmapWrap"></div>
+</div>
+
+<!-- Table -->
+<div class="cc full" id="cardPipelineTable" data-visual-id="table-pipeline" data-visual-name="Upcoming Removals — Project Pipeline">
+  <h4>Upcoming Removals — Project Pipeline</h4>
+  <div style="overflow-x:auto">
+    <table>
+      <thead>
+        <tr><th>Project</th><th>CSR</th><th>Site Name</th><th>Region</th><th>Equipment</th><th>Qty</th><th>Planned Removal Date</th><th>Status</th><th>Recovery Plan</th></tr>
+      </thead>
+      <tbody id="tblPipeline"></tbody>
+    </table>
+  </div>
+</div>
+
+</div><!-- end .pg -->
+</div><!-- end .dw -->
+
+<script>
+Chart.defaults.font.family='system-ui,-apple-system,sans-serif';
+Chart.defaults.font.size=10;
+Chart.defaults.color='#757575';
+
+/* ================================================================
+   INFO TEXTS
+   ================================================================ */
+const infoTexts={
+  kpiForecastVol:"Total equipment units forecasted for removal from in-scope projects. Drives: recovery planning and logistics",
+  kpiReuseMatch:"Percentage of new equipment demand matchable with recovered stock. Drives: procurement offset decisions",
+  kpiForecastAccuracy:"Historical accuracy of removal forecasts. Drives: confidence in planning and resource allocation",
+  kpiTimelineAdherence:"Percentage of planned removals completed on time. Drives: logistics reliability assessment",
+  forecastTimeline:"Forecasted removal volumes by week and equipment type. Drives: recovery team scheduling and warehouse capacity planning",
+  demandMatch:"Compares new equipment demand with available recovered stock. Gaps indicate mandatory new purchases. Drives: procurement vs reuse decision per equipment type",
+  regionalHeatmap:"Cross-reference of expected removals by region and equipment type. Drives: regional recovery logistics planning and warehouse allocation",
+  pipelineTable:"Project-level view of planned equipment removals. Drives: site-level recovery planning and team dispatch"
+};
+
+/* ================================================================
+   INFO ICON HELPERS
+   ================================================================ */
+function addInfoIcon(containerId, infoKey){
+  const container=document.getElementById(containerId);
+  if(!container) return;
+  const panelId='infoPanel_'+infoKey;
+  const btn=document.createElement('button');
+  btn.className='info-icon-btn';
+  btn.innerHTML='i';
+  btn.title='Show info';
+  btn.setAttribute('aria-label','Toggle information panel');
+  btn.onclick=function(e){
+    e.stopPropagation();
+    const panel=document.getElementById(panelId);
+    if(panel){
+      panel.classList.toggle('open');
+      btn.style.background=panel.classList.contains('open')?'#e8f0fe':'';
+      btn.style.color=panel.classList.contains('open')?'#2a5f8f':'';
+    }
+  };
+  container.appendChild(btn);
+  const panel=document.createElement('div');
+  panel.className='info-panel';
+  panel.id=panelId;
+  panel.textContent=infoTexts[infoKey]||'';
+  const h4=container.querySelector('h4');
+  if(h4 && h4.nextSibling){
+    h4.parentNode.insertBefore(panel,h4.nextSibling);
+  } else {
+    container.appendChild(panel);
+  }
+}
+
+function addInfoIconToEl(el, infoKey){
+  if(!el) return;
+  el.style.position='relative';
+  const panelId='infoPanel_'+infoKey;
+  const btn=document.createElement('button');
+  btn.className='info-icon-btn';
+  btn.innerHTML='i';
+  btn.title='Show info';
+  btn.onclick=function(e){
+    e.stopPropagation();
+    const panel=document.getElementById(panelId);
+    if(panel){
+      panel.classList.toggle('open');
+      btn.style.background=panel.classList.contains('open')?'#e8f0fe':'';
+      btn.style.color=panel.classList.contains('open')?'#2a5f8f':'';
+    }
+  };
+  el.appendChild(btn);
+  const panel=document.createElement('div');
+  panel.className='info-panel';
+  panel.id=panelId;
+  panel.textContent=infoTexts[infoKey]||'';
+  el.appendChild(panel);
+}
+
+/* ================================================================
+   MOCK DATA
+   ================================================================ */
+
+// Weekly forecast data (12 weeks)
+const weeklyData={
+  labels:['W15','W16','W17','W18','W19','W20','W21','W22','W23','W24','W25','W26'],
+  antennas:[45,62,38,71,54,49,67,42,58,73,61,55],
+  radios:[32,41,28,53,47,36,44,31,39,51,43,37],
+  power:[18,24,15,29,22,19,26,17,21,28,23,20],
+  cabinets:[12,16,10,19,14,13,17,11,14,18,15,13],
+  other:[8,11,7,13,10,8,12,7,9,14,10,9]
+};
+
+// Monthly aggregation
+const monthlyData={
+  labels:['Apr 2026','May 2026','Jun 2026'],
+  antennas:[216,212,247],
+  radios:[154,158,170],
+  power:[86,87,92],
+  cabinets:[57,55,60],
+  other:[39,37,43]
+};
+
+// Demand vs recovery
+const demandData={
+  types:['Antennas','Radios','Power','Cabinets','Other'],
+  demand:[320,280,150,95,60],
+  recovered:[180,90,140,100,35]
+};
+
+// Regional heatmap
+const heatmapData={
+  regions:['South','Midlands','North','Scotland & NI'],
+  types:['Antennas','Radios','Power','Cabinets','Other'],
+  values:[
+    [245,180,95,62,38],
+    [198,142,72,48,28],
+    [156,118,58,35,22],
+    [76,52,27,17,10]
+  ]
+};
+
+// Pipeline table
+const pipelineRows=[
+  {project:'KD 2025 T1.9',csr:'75349',site:'HALSALL FIELD',region:'South',equip:'Antenna (Nokia AHEGHA)',qty:3,date:'2026-04-21',status:'Scheduled',plan:'Reuse'},
+  {project:'KD 2025 T1.14',csr:'11601',site:'BEACON 4',region:'South',equip:'Radio (Ericsson 2238)',qty:6,date:'2026-04-18',status:'In Progress',plan:'Reuse'},
+  {project:'KD 2025 T1.16',csr:'350',site:'TEMPLE WOOD',region:'South',equip:'Cabinet (outdoor)',qty:2,date:'2026-04-25',status:'Scheduled',plan:'Recycle'},
+  {project:'KD 2025 T1.18',csr:'69037',site:'STOWS FARM',region:'South',equip:'Power (Eltek 4th Gen PSU)',qty:1,date:'2026-04-14',status:'Delayed',plan:'Reuse'},
+  {project:'KD 2024 T1.2',csr:'71252',site:'NORWICH UNITED FC',region:'South',equip:'Antenna (Commscope)',qty:3,date:'2026-05-02',status:'Scheduled',plan:'Pending'},
+  {project:'KD Midlands M2.3',csr:'44201',site:'COVENTRY CENTRAL',region:'Midlands',equip:'Radio (Nokia AHPMDG)',qty:3,date:'2026-04-28',status:'Scheduled',plan:'Reuse'},
+  {project:'KD Midlands M2.3',csr:'44202',site:'BIRMINGHAM EAST',region:'Midlands',equip:'Power (Eltek FP2)',qty:2,date:'2026-05-05',status:'Scheduled',plan:'Recycle'},
+  {project:'KD North N3.1',csr:'55801',site:'LEEDS KIRKSTALL',region:'North',equip:'Antenna (Ericsson AIR)',qty:3,date:'2026-04-22',status:'In Progress',plan:'Reuse'},
+  {project:'KD North N3.1',csr:'55802',site:'MANCHESTER SOUTH',region:'North',equip:'Cabinet (indoor)',qty:4,date:'2026-05-10',status:'Scheduled',plan:'Pending'},
+  {project:'KD North N3.2',csr:'55810',site:'SHEFFIELD PARK',region:'North',equip:'Radio (Nokia AHSB)',qty:3,date:'2026-04-30',status:'Scheduled',plan:'Reuse'},
+  {project:'KD Scotland S1.1',csr:'66101',site:'EDINBURGH NORTH',region:'Scotland & NI',equip:'Power (Eltek 4th Gen PSU)',qty:2,date:'2026-05-08',status:'Scheduled',plan:'Recycle'},
+  {project:'KD Scotland S1.1',csr:'66102',site:'GLASGOW CENTRAL',region:'Scotland & NI',equip:'Antenna (Nokia AHEGHA)',qty:3,date:'2026-04-19',status:'Completed',plan:'Reuse'},
+  {project:'KD 2025 T1.12',csr:'3033',site:'LANGNEY NEW',region:'South',equip:'Radio (Ericsson ERS2238)',qty:3,date:'2026-05-15',status:'Scheduled',plan:'Pending'},
+  {project:'KD Midlands M2.5',csr:'44310',site:'LEICESTER WEST',region:'Midlands',equip:'Cabinet (outdoor)',qty:2,date:'2026-04-16',status:'In Progress',plan:'Reuse'},
+  {project:'KD 2025 T1.9',csr:'67498',site:'PAINES WOOD SITE',region:'South',equip:'Antenna (Commscope)',qty:3,date:'2026-05-20',status:'Scheduled',plan:'Pending'}
+];
+
+/* ================================================================
+   CHART: FORECAST TIMELINE
+   ================================================================ */
+let timelineChart=null;
+function setTimelineView(mode){
+  const canvas=document.getElementById('chForecastTimeline');
+  if(timelineChart) timelineChart.destroy();
+  const d = mode==='monthly'?monthlyData:weeklyData;
+  timelineChart=new Chart(canvas,{type:'bar',data:{labels:d.labels,datasets:[
+    {label:'Antennas',data:d.antennas,backgroundColor:'#1a2d4f'},
+    {label:'Radios',data:d.radios,backgroundColor:'#2a5f8f'},
+    {label:'Power',data:d.power,backgroundColor:'#d97706'},
+    {label:'Cabinets',data:d.cabinets,backgroundColor:'#6b7280'},
+    {label:'Other',data:d.other,backgroundColor:'#9ca3af'}
+  ]},options:{maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,grid:{color:'#f1f3f4'},title:{display:true,text:'Units'}}}}});
+  document.querySelectorAll('#cardForecastTimeline .toggle-group button').forEach(b=>{
+    b.classList.toggle('active',b.textContent.toLowerCase()===mode);
+  });
+}
+
+/* ================================================================
+   CHART: DEMAND VS RECOVERY MATCH
+   ================================================================ */
+function initDemandChart(){
+  const canvas=document.getElementById('chDemandMatch');
+  // Build datasets: for each type, show demand bar plus recovered/deficit bar
+  const recoveredCapped=demandData.types.map((_,i)=>Math.min(demandData.recovered[i],demandData.demand[i]));
+  const deficit=demandData.types.map((_,i)=>Math.max(0,demandData.demand[i]-demandData.recovered[i]));
+  const surplus=demandData.types.map((_,i)=>Math.max(0,demandData.recovered[i]-demandData.demand[i]));
+
+  new Chart(canvas,{type:'bar',data:{labels:demandData.types,datasets:[
+    {label:'New Demand',data:demandData.demand,backgroundColor:'#1a2d4f'},
+    {label:'Recovered Stock',data:demandData.recovered.map((_,i)=>{
+      return demandData.recovered[i]>=demandData.demand[i]?demandData.recovered[i]:demandData.recovered[i];
+    }),backgroundColor:demandData.recovered.map((r,i)=>r>=demandData.demand[i]?'#166534':'#C8102E')}
+  ]},options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{afterBody:function(ctx){
+    const i=ctx[0].dataIndex;
+    const gap=demandData.demand[i]-demandData.recovered[i];
+    return gap>0?'Deficit: '+gap+' units':'Surplus: '+Math.abs(gap)+' units';
+  }}}},scales:{x:{grid:{display:false}},y:{grid:{color:'#f1f3f4'},title:{display:true,text:'Units'}}}}});
+}
+
+/* ================================================================
+   HEATMAP: REGIONAL REMOVAL
+   ================================================================ */
+function initHeatmap(){
+  const wrap=document.getElementById('heatmapWrap');
+  const maxVal=Math.max(...heatmapData.values.flat());
+  let html='<table style="width:100%"><thead><tr><th style="min-width:100px">Region</th>';
+  heatmapData.types.forEach(t=>{ html+='<th style="text-align:center">'+t+'</th>'; });
+  html+='<th style="text-align:center">Total</th></tr></thead><tbody>';
+  heatmapData.values.forEach((row,ri)=>{
+    const total=row.reduce((a,b)=>a+b,0);
+    html+='<tr><td style="font-weight:500">'+heatmapData.regions[ri]+'</td>';
+    row.forEach(v=>{
+      const intensity=v/maxVal;
+      const bg=intensity>0.7?'#1a2d4f':intensity>0.4?'#2a5f8f':intensity>0.2?'#7bafd4':'#d0e4f2';
+      const color=intensity>0.4?'#fff':'#1a2d4f';
+      html+='<td style="text-align:center;background:'+bg+';color:'+color+';font-weight:500;border-radius:3px;padding:8px 4px">'+v+'</td>';
+    });
+    const totalIntensity=total/(maxVal*5)*3;
+    const tbg=totalIntensity>0.7?'#1a2d4f':totalIntensity>0.4?'#2a5f8f':'#7bafd4';
+    const tc=totalIntensity>0.3?'#fff':'#1a2d4f';
+    html+='<td style="text-align:center;background:'+tbg+';color:'+tc+';font-weight:600;border-radius:3px;padding:8px 4px">'+total+'</td>';
+    html+='</tr>';
+  });
+  // Totals row
+  html+='<tr style="border-top:2px solid #e0e0e0"><td style="font-weight:600">Total</td>';
+  for(let c=0;c<heatmapData.types.length;c++){
+    const colTotal=heatmapData.values.reduce((a,row)=>a+row[c],0);
+    html+='<td style="text-align:center;font-weight:600;background:#f8f9fa;border-radius:3px;padding:8px 4px">'+colTotal+'</td>';
+  }
+  const grandTotal=heatmapData.values.flat().reduce((a,b)=>a+b,0);
+  html+='<td style="text-align:center;font-weight:700;background:#1a2d4f;color:#fff;border-radius:3px;padding:8px 4px">'+grandTotal+'</td>';
+  html+='</tr></tbody></table>';
+  wrap.innerHTML=html;
+}
+
+/* ================================================================
+   TABLE: PIPELINE
+   ================================================================ */
+function renderPipelineTable(){
+  const tb=document.getElementById('tblPipeline');
+  tb.innerHTML=pipelineRows.map(r=>{
+    let statusPill='';
+    switch(r.status){
+      case 'Scheduled': statusPill='<span class="pill pb">Scheduled</span>'; break;
+      case 'In Progress': statusPill='<span class="pill pa">In Progress</span>'; break;
+      case 'Completed': statusPill='<span class="pill pg2">Completed</span>'; break;
+      case 'Delayed': statusPill='<span class="pill pr">Delayed</span>'; break;
+    }
+    let planPill='';
+    switch(r.plan){
+      case 'Reuse': planPill='<span class="pill pg2">Reuse</span>'; break;
+      case 'Recycle': planPill='<span class="pill pa">Recycle</span>'; break;
+      case 'Pending': planPill='<span class="pill pn">Pending</span>'; break;
+    }
+    return '<tr><td>'+r.project+'</td><td>'+r.csr+'</td><td>'+r.site+'</td><td>'+r.region+'</td><td>'+r.equip+'</td><td>'+r.qty+'</td><td>'+r.date+'</td><td>'+statusPill+'</td><td>'+planPill+'</td></tr>';
+  }).join('');
+}
+
+/* ================================================================
+   INIT
+   ================================================================ */
+setTimelineView('weekly');
+initDemandChart();
+initHeatmap();
+renderPipelineTable();
+
+// Add info icons
+addInfoIconToEl(document.getElementById('kpiForecastVol'),'kpiForecastVol');
+addInfoIconToEl(document.getElementById('kpiReuseMatch'),'kpiReuseMatch');
+addInfoIconToEl(document.getElementById('kpiForecastAccuracy'),'kpiForecastAccuracy');
+addInfoIconToEl(document.getElementById('kpiTimelineAdherence'),'kpiTimelineAdherence');
+addInfoIcon('cardForecastTimeline','forecastTimeline');
+addInfoIcon('cardDemandMatch','demandMatch');
+addInfoIcon('cardRegionalHeatmap','regionalHeatmap');
+addInfoIcon('cardPipelineTable','pipelineTable');
+
+/* ================================================================
+   FEEDBACK SYSTEM
+   ================================================================ */
+
+const DASHBOARD_ID = 'US6';
+const DASHBOARD_VERSION = '1.0';
+const FEEDBACK_EMAIL = 'marta@inferencegroup.com';
+
+let feedbackData = {
+  dashboard: DASHBOARD_ID,
+  version: DASHBOARD_VERSION,
+  reviewer: '',
+  date: new Date().toISOString().split('T')[0],
+  overall: [],
+  visuals: []
+};
+
+function loadFeedback(){
+  const saved = localStorage.getItem('fb_' + DASHBOARD_ID);
+  if(saved){
+    try{ feedbackData = JSON.parse(saved); } catch(e){}
+  }
+  renderOverallComments();
+  updateBubbles();
+  updateCount();
+}
+
+function saveFeedback(){
+  localStorage.setItem('fb_' + DASHBOARD_ID, JSON.stringify(feedbackData));
+  updateCount();
+}
+
+function toggleFeedbackMode(){
+  document.body.classList.toggle('feedback-mode');
+  const btn = document.querySelector('.fb-toggle');
+  btn.classList.toggle('active');
+  btn.textContent = document.body.classList.contains('feedback-mode') ? '\u2715 Exit Feedback' : '\uD83D\uDCAC Feedback';
+}
+
+function initFeedbackBubbles(){
+  document.querySelectorAll('[data-visual-id]').forEach(el => {
+    if(el.querySelector('.fb-bubble')) return;
+    el.style.position = 'relative';
+    const bubble = document.createElement('button');
+    bubble.className = 'fb-bubble';
+    bubble.innerHTML = '\uD83D\uDCAC';
+    bubble.title = 'Add feedback for: ' + (el.dataset.visualName || el.dataset.visualId);
+    bubble.onclick = function(e){
+      e.stopPropagation();
+      openFeedbackPanel(el);
+    };
+    el.appendChild(bubble);
+  });
+}
+
+function openFeedbackPanel(el){
+  document.querySelectorAll('.fb-input-panel.open').forEach(p => p.classList.remove('open'));
+  let panel = el.querySelector('.fb-input-panel');
+  if(!panel){
+    panel = document.createElement('div');
+    panel.className = 'fb-input-panel';
+    const vid = el.dataset.visualId;
+    const vname = el.dataset.visualName || vid;
+    const existing = feedbackData.visuals.filter(v => v.id === vid);
+    let existingHtml = '';
+    if(existing.length > 0){
+      existingHtml = '<div class="fb-existing"><strong>Existing comments:</strong><br>' +
+        existing.map((c,i) => '\u2022 [' + c.priority + '] ' + c.type + ': ' + c.comment + ' <button class="fb-remove-comment" onclick="removeVisualComment(\'' + vid + '\',' + i + ');this.closest(\'.fb-input-panel\').classList.remove(\'open\');">\u2715</button>').join('<br>') +
+        '</div>';
+    }
+    panel.innerHTML =
+      '<div style="font-weight:600;margin-bottom:6px;font-size:12px">' + vname + '</div>' +
+      existingHtml +
+      '<textarea id="fbInput_' + vid + '" placeholder="What should change about this visual?"></textarea>' +
+      '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">' +
+        '<select id="fbType_' + vid + '">' +
+          '<option value="change">\u270F\uFE0F Change</option>' +
+          '<option value="remove">\uD83D\uDDD1\uFE0F Remove</option>' +
+          '<option value="add">\u2795 Add new</option>' +
+          '<option value="question">\u2753 Question</option>' +
+          '<option value="approve">\u2705 Approve</option>' +
+        '</select>' +
+        '<select id="fbPriority_' + vid + '">' +
+          '<option value="high">\uD83D\uDD34 High</option>' +
+          '<option value="medium" selected>\uD83D\uDFE1 Medium</option>' +
+          '<option value="low">\uD83D\uDFE2 Low</option>' +
+        '</select>' +
+        '<button class="fb-cancel" onclick="this.closest(\'.fb-input-panel\').classList.remove(\'open\')">Cancel</button>' +
+        '<button class="fb-save" onclick="saveVisualComment(\'' + vid + '\',\'' + vname + '\')">Save</button>' +
+      '</div>';
+    el.appendChild(panel);
+  } else {
+    const vid = el.dataset.visualId;
+    const existing = feedbackData.visuals.filter(v => v.id === vid);
+    const existingDiv = panel.querySelector('.fb-existing');
+    if(existing.length > 0){
+      const html = '<div class="fb-existing"><strong>Existing comments:</strong><br>' +
+        existing.map((c,i) => '\u2022 [' + c.priority + '] ' + c.type + ': ' + c.comment + ' <button class="fb-remove-comment" onclick="removeVisualComment(\'' + vid + '\',' + i + ');this.closest(\'.fb-input-panel\').classList.remove(\'open\');">\u2715</button>').join('<br>') +
+        '</div>';
+      if(existingDiv) existingDiv.outerHTML = html;
+      else panel.querySelector('textarea').insertAdjacentHTML('beforebegin', html);
+    } else if(existingDiv){
+      existingDiv.remove();
+    }
+  }
+  panel.classList.add('open');
+}
+
+function saveVisualComment(id, name){
+  const comment = document.getElementById('fbInput_' + id)?.value.trim();
+  if(!comment) return;
+  feedbackData.visuals.push({
+    id: id,
+    name: name,
+    type: document.getElementById('fbType_' + id)?.value || 'change',
+    comment: comment,
+    priority: document.getElementById('fbPriority_' + id)?.value || 'medium'
+  });
+  saveFeedback();
+  updateBubbles();
+  const input = document.getElementById('fbInput_' + id);
+  if(input) input.value = '';
+  document.querySelectorAll('.fb-input-panel.open').forEach(p => p.classList.remove('open'));
+}
+
+function removeVisualComment(id, index){
+  const matching = feedbackData.visuals.filter(v => v.id === id);
+  if(matching[index]){
+    const globalIndex = feedbackData.visuals.indexOf(matching[index]);
+    feedbackData.visuals.splice(globalIndex, 1);
+    saveFeedback();
+    updateBubbles();
+  }
+}
+
+function updateBubbles(){
+  document.querySelectorAll('[data-visual-id]').forEach(el => {
+    const vid = el.dataset.visualId;
+    const bubble = el.querySelector('.fb-bubble');
+    if(!bubble) return;
+    const count = feedbackData.visuals.filter(v => v.id === vid).length;
+    bubble.classList.toggle('has-comment', count > 0);
+    const oldBadge = bubble.querySelector('.fb-badge');
+    if(oldBadge) oldBadge.remove();
+    if(count > 0){
+      const badge = document.createElement('span');
+      badge.className = 'fb-badge';
+      badge.textContent = count;
+      bubble.appendChild(badge);
+    }
+  });
+}
+
+function addOverallComment(){
+  const input = document.getElementById('fbOverallInput');
+  const priority = document.getElementById('fbOverallPriority');
+  if(!input || !input.value.trim()) return;
+  feedbackData.overall.push({
+    comment: input.value.trim(),
+    priority: priority?.value || 'medium'
+  });
+  saveFeedback();
+  renderOverallComments();
+  input.value = '';
+}
+
+function renderOverallComments(){
+  const container = document.getElementById('fbOverallComments');
+  if(!container) return;
+  container.innerHTML = feedbackData.overall.map((c, i) =>
+    '<div class="fb-comment-item">' +
+      '<div>' +
+        '<div class="fb-comment-text">' + c.comment + '</div>' +
+        '<div class="fb-comment-meta">' + (c.priority === 'high' ? '\uD83D\uDD34' : c.priority === 'medium' ? '\uD83D\uDFE1' : '\uD83D\uDFE2') + ' ' + c.priority + ' priority</div>' +
+      '</div>' +
+      '<button class="fb-remove-comment" onclick="removeOverallComment(' + i + ')">\u2715</button>' +
+    '</div>'
+  ).join('');
+}
+
+function removeOverallComment(index){
+  feedbackData.overall.splice(index, 1);
+  saveFeedback();
+  renderOverallComments();
+}
+
+function updateCount(){
+  const el = document.getElementById('fbCount');
+  if(el) el.textContent = feedbackData.overall.length + feedbackData.visuals.length;
+}
+
+function exportFeedback(){
+  feedbackData.reviewer = prompt('Your name:') || 'Anonymous';
+  feedbackData.date = new Date().toISOString().split('T')[0];
+  const json = JSON.stringify(feedbackData, null, 2);
+  const commentCount = feedbackData.overall.length + feedbackData.visuals.length;
+  fetch('/api/feedback', {method:'POST',headers:{'Content-Type':'application/json'},body:json})
+  .then(r => r.json())
+  .then(data => {
+    if(data.success){
+      showSubmitSuccess(commentCount, feedbackData.reviewer);
+      feedbackData.overall=[];feedbackData.visuals=[];
+      saveFeedback();renderOverallComments();updateBubbles();
+    }
+  })
+  .catch(() => { showSubmitSuccess(commentCount, feedbackData.reviewer); });
+}
+
+function showSubmitSuccess(count, reviewer){
+  let modal = document.getElementById('fbFallbackModal');
+  if(modal) modal.remove();
+  modal = document.createElement('div');
+  modal.id = 'fbFallbackModal';
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:10000;display:flex;align-items:flex-start;justify-content:center;padding-top:60px';
+  modal.innerHTML =
+    '<div style="background:#fff;border-radius:12px;padding:36px;max-width:420px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.2);font-family:system-ui,sans-serif;text-align:center">' +
+    '<div style="width:56px;height:56px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px">✓</div>' +
+    '<h3 style="font-size:18px;color:#1a2d4f;margin-bottom:8px">Feedback Submitted</h3>' +
+    '<p style="font-size:13px;color:#757575;margin-bottom:6px">' + count + ' comment' + (count!==1?'s':'') + ' from <strong>' + reviewer + '</strong></p>' +
+    '<p style="font-size:12px;color:#757575;margin-bottom:24px">The team will review your comments and get back to you with any questions or updates.</p>' +
+    '<button onclick="document.getElementById(\'fbFallbackModal\').remove()" style="background:#1a2d4f;color:#fff;border:none;padding:10px 28px;border-radius:6px;cursor:pointer;font-size:13px;font-family:inherit">Done</button>' +
+    '</div>';
+  modal.onclick = function(e){ if(e.target === modal) modal.remove(); };
+  document.body.appendChild(modal);
+}
+
+function startStatusPolling(){
+  const poll=setInterval(()=>{
+    fetch('/api/status/'+DASHBOARD_ID).then(r=>r.json()).then(s=>{
+      if(s.status==='complete'){clearInterval(poll);showStatusBanner('success','Dashboard updated! Refresh to see changes.');
+        const b=document.getElementById('statusBanner');if(b){const btn=document.createElement('button');btn.textContent='Refresh';btn.style.cssText='margin-left:12px;padding:4px 12px;border:none;border-radius:4px;background:#1a2d4f;color:#fff;cursor:pointer;font-size:11px';btn.onclick=()=>location.reload();b.appendChild(btn);}
+      }else if(s.status==='questions_pending'){clearInterval(poll);showStatusBanner('warning','Claude has clarifying questions.');loadQuestions();}
+      else if(s.status==='error'){clearInterval(poll);showStatusBanner('error','Error: '+(s.message||'Failed'));}
+    }).catch(()=>clearInterval(poll));
+  },3000);
+}
+function showStatusBanner(type,message){
+  let b=document.getElementById('statusBanner');
+  if(!b){b=document.createElement('div');b.id='statusBanner';const t=document.querySelector('.topbar');t.parentNode.insertBefore(b,t.nextSibling);}
+  const c={success:{bg:'#dcfce7',border:'#166534',text:'#166534'},warning:{bg:'#fef3c7',border:'#d97706',text:'#92400e'},error:{bg:'#fee2e2',border:'#991b1b',text:'#991b1b'},info:{bg:'#e0f2fe',border:'#0284c7',text:'#0369a1'}}[type]||{bg:'#e0f2fe',border:'#0284c7',text:'#0369a1'};
+  b.style.cssText='padding:10px 18px;font-size:12px;display:flex;align-items:center;gap:8px;background:'+c.bg+';border-bottom:2px solid '+c.border+';color:'+c.text;
+  b.innerHTML=message;
+}
+function loadQuestions(){
+  fetch('/api/questions/'+DASHBOARD_ID).then(r=>r.json()).then(d=>{
+    if(d.questions&&d.questions.length>0)showQuestionsPanel(d.questions);
+  }).catch(()=>{});
+}
+function showQuestionsPanel(questions){
+  let p=document.getElementById('questionsPanel');
+  if(!p){p=document.createElement('div');p.id='questionsPanel';p.style.cssText='background:#fffbeb;border:1px solid #f59e0b;border-radius:8px;padding:16px 20px;margin:14px;font-size:12px';
+    const ref=document.querySelector('.fb-export-bar');
+    if(ref)ref.parentNode.insertBefore(p,ref.nextSibling);
+    else document.querySelector('.topbar').after(p);
+  }
+  p.innerHTML='<h4 style="color:#92400e;margin-bottom:12px;font-size:14px">Clarifying Questions from Claude</h4>'+
+    '<p style="color:#78350f;margin-bottom:12px">Please answer these questions so changes can be applied:</p>'+
+    questions.map((q,i)=>'<div style="background:#fff;border:1px solid #e0e0e0;border-radius:6px;padding:10px;margin-bottom:8px">'+
+      '<div style="font-weight:600;margin-bottom:4px">Q'+(i+1)+': '+q.question+'</div>'+
+      (q.context?'<div style="color:#757575;font-size:11px;margin-bottom:6px">Context: '+q.context+'</div>':'')+
+      '<textarea id="answer_'+i+'" placeholder="Your answer..." style="width:100%;border:1px solid #e0e0e0;border-radius:4px;padding:6px;font-size:11px;font-family:inherit;min-height:40px;margin-top:4px"></textarea></div>').join('')+
+    '<button onclick="submitAnswers('+questions.length+')" style="background:#1a2d4f;color:#fff;border:none;padding:8px 20px;border-radius:4px;cursor:pointer;font-size:12px;margin-top:8px">Submit Answers</button>';
+}
+function submitAnswers(count){
+  const answers=[];for(let i=0;i<count;i++){const el=document.getElementById('answer_'+i);answers.push(el?el.value.trim():'');}
+  fetch('/api/answers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dashboard:DASHBOARD_ID,answers,date:new Date().toISOString().split('T')[0]})})
+  .then(r=>r.json()).then(d=>{
+    if(d.success){const p=document.getElementById('questionsPanel');if(p)p.remove();showStatusBanner('success','Answers submitted! Processing...');startStatusPolling();}
+  }).catch(()=>showStatusBanner('error','Could not submit answers.'));
+}
+
+function clearAllFeedback(){
+  if(!confirm('Clear all feedback comments?')) return;
+  feedbackData.overall = [];
+  feedbackData.visuals = [];
+  saveFeedback();
+  renderOverallComments();
+  updateBubbles();
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  initFeedbackBubbles();
+  loadFeedback();
+  fetch('/api/questions/'+DASHBOARD_ID).then(r=>r.json()).then(d=>{
+    if(d.questions&&d.questions.length>0){document.body.classList.add('feedback-mode');
+      const btn=document.querySelector('.fb-toggle');if(btn){btn.classList.add('active');btn.textContent='\u2715 Exit Feedback';}
+      showStatusBanner('warning','Claude has clarifying questions.');showQuestionsPanel(d.questions);
+    }
+  }).catch(()=>{});
+});
+</script>
+</body>
+</html>

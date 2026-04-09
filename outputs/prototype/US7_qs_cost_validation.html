@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>US7 — QS Cost Validation v1.0</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{--font-sans:system-ui,-apple-system,sans-serif;--color-background-primary:#ffffff;--color-background-secondary:#f8f9fa;--color-background-tertiary:#f1f3f4;--color-text-primary:#212121;--color-text-secondary:#757575;--color-border-tertiary:#e0e0e0;--border-radius-lg:8px;--border-radius-md:6px}
+*{box-sizing:border-box;margin:0;padding:0}
+.dw{font-family:var(--font-sans);background:var(--color-background-tertiary)}
+.topbar{background:#1a2d4f;padding:10px 18px;display:flex;align-items:center;justify-content:space-between;border-radius:var(--border-radius-lg) var(--border-radius-lg) 0 0}
+.topbar-title{color:#fff;font-size:14px;font-weight:500}
+.topbar-sub{color:rgba(255,255,255,.5);font-size:11px;margin-top:2px}
+.topbar-right{color:rgba(255,255,255,.45);font-size:11px}
+.tabs{display:flex;background:var(--color-background-primary);border-bottom:1.5px solid var(--color-border-tertiary);padding:0 16px}
+.tab{padding:9px 16px;font-size:12px;color:var(--color-text-secondary);cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-1.5px;white-space:nowrap}
+.tab.on{color:#1a2d4f;font-weight:500;border-bottom-color:#C8102E}
+.tab:hover:not(.on){background:var(--color-background-secondary)}
+.pg{display:none;padding:14px;background:var(--color-background-secondary)}
+.pg.on{display:block}
+.fb{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--color-background-primary);padding:9px 12px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);margin-bottom:12px}
+.fb select,.fb input[type=text],.fb input[type=date]{font-size:12px;padding:3px 7px;border-radius:4px;border:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary);color:var(--color-text-primary);height:26px}
+.fl{font-size:11px;color:var(--color-text-secondary)}
+.krow{display:grid;gap:10px;margin-bottom:12px}
+.k5{grid-template-columns:repeat(5,minmax(0,1fr))}
+.k4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.k3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.k2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.kpi{background:var(--color-background-primary);border-radius:var(--border-radius-md);padding:11px 13px;border:0.5px solid var(--color-border-tertiary);position:relative}
+.kpi-lbl{font-size:11px;color:var(--color-text-secondary);line-height:1.3;margin-bottom:3px}
+.kpi-val{font-size:24px;font-weight:500;color:var(--color-text-primary);line-height:1}
+.kpi-sub{font-size:10px;margin-top:3px;color:var(--color-text-secondary)}
+.kpi.red .kpi-val{color:#C8102E}
+.kpi.amb .kpi-val{color:#d97706}
+.kpi.grn .kpi-val{color:#166534}
+.cg2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.cc{background:var(--color-background-primary);border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);padding:12px;margin-bottom:0;overflow:hidden;position:relative}
+.cc h4{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-secondary);margin-bottom:10px}
+.leg{display:flex;gap:12px;flex-wrap:wrap;font-size:10px;color:var(--color-text-secondary);margin-top:8px}
+.li{display:flex;align-items:center;gap:4px}
+.lsq{width:9px;height:9px;border-radius:2px}
+.lc{width:9px;height:9px;border-radius:50%}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{font-size:10px;font-weight:500;color:var(--color-text-secondary);padding:6px 8px;text-align:left;border-bottom:1px solid var(--color-border-tertiary);background:var(--color-background-secondary);white-space:nowrap}
+td{padding:6px 8px;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-primary);vertical-align:middle}
+tr:hover td{background:var(--color-background-tertiary)}
+tr:last-child td{border-bottom:none}
+.pill{display:inline-block;padding:1px 7px;border-radius:20px;font-size:10px;font-weight:500;white-space:nowrap}
+.pr{background:#fee2e2;color:#991b1b}
+.pa{background:#fef3c7;color:#92400e}
+.pg2{background:#dcfce7;color:#166534}
+.pb{background:#dbeafe;color:#1e40af}
+.pn{background:var(--color-background-tertiary);color:var(--color-text-secondary)}
+
+/* Info icon styles */
+.info-icon-btn{position:absolute;top:8px;right:8px;width:18px;height:18px;border-radius:50%;border:1px solid #bbb;background:var(--color-background-secondary);color:#999;font-size:11px;line-height:16px;text-align:center;cursor:pointer;z-index:5;font-family:serif;font-weight:600;transition:background .2s,color .2s,border-color .2s}
+.info-icon-btn:hover{background:#e8f0fe;color:#2a5f8f;border-color:#2a5f8f}
+.info-panel{display:none;position:relative;background:#f0f4fa;border:1px solid #d0daea;border-radius:4px;padding:8px 10px;margin-top:8px;font-size:10px;line-height:1.5;color:#333;z-index:4;animation:infoFadeIn .2s ease}
+.info-panel.open{display:block}
+@keyframes infoFadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+
+/* Amber banner for illustrative data */
+.illustrative-banner{background:#fef3c7;border:1px solid #f59e0b;border-radius:4px;padding:5px 10px;font-size:10px;color:#92400e;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+
+/* Feedback Mode Toggle */
+.fb-toggle{background:#C8102E;border:1px solid #C8102E;color:#fff;font-size:12px;padding:6px 16px;border-radius:4px;cursor:pointer;font-family:var(--font-sans);transition:all .2s;font-weight:600}
+.fb-toggle:hover{background:#a00d24;border-color:#a00d24;color:#fff}
+.fb-toggle.active{background:#d97706;border-color:#d97706;color:#fff;font-weight:600}
+
+/* Feedback bubble on visuals */
+.fb-bubble{display:none;position:absolute;top:6px;right:28px;width:20px;height:20px;border-radius:50%;background:#d97706;color:#fff;font-size:12px;border:none;cursor:pointer;align-items:center;justify-content:center;z-index:1000;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .15s}
+.fb-bubble:hover{transform:scale(1.15)}
+.fb-bubble.has-comment{background:#C8102E}
+body.feedback-mode .fb-bubble{display:flex}
+
+/* Comment count badge */
+.fb-badge{position:absolute;top:-4px;right:-4px;width:14px;height:14px;border-radius:50%;background:#C8102E;color:#fff;font-size:8px;display:flex;align-items:center;justify-content:center;font-weight:700}
+
+/* Feedback input panel */
+.fb-input-panel{display:none;position:absolute;top:32px;right:6px;width:320px;max-height:400px;overflow-y:auto;background:#fff;border:1px solid #e0e0e0;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.15);z-index:1001;padding:10px;font-size:11px}
+.fb-input-panel.open{display:block}
+.fb-input-panel textarea{width:100%;border:1px solid #e0e0e0;border-radius:4px;padding:6px 8px;font-size:11px;font-family:var(--font-sans);resize:vertical;min-height:60px;margin-bottom:6px}
+.fb-input-panel select{font-size:11px;padding:3px 6px;border:1px solid #e0e0e0;border-radius:4px;margin-right:6px}
+.fb-input-panel button{font-size:11px;padding:3px 10px;border-radius:4px;border:none;cursor:pointer;font-family:var(--font-sans)}
+.fb-input-panel .fb-save{background:#1a2d4f;color:#fff}
+.fb-input-panel .fb-save:hover{background:#2a4060}
+.fb-input-panel .fb-cancel{background:#f1f3f4;color:#333;margin-right:6px}
+.fb-input-panel .fb-delete{background:#fee2e2;color:#991b1b;margin-left:auto}
+
+/* Overall feedback panel */
+.fb-overall{display:none;background:#fffbeb;border:1px solid #f59e0b;border-radius:6px;padding:12px 16px;margin:0 14px 12px 14px}
+body.feedback-mode .fb-overall{display:block}
+.fb-overall h4{font-size:12px;color:#92400e;margin-bottom:8px}
+.fb-overall textarea{width:100%;border:1px solid #e0e0e0;border-radius:4px;padding:6px 8px;font-size:11px;font-family:var(--font-sans);resize:vertical;min-height:50px;margin-bottom:6px}
+.fb-overall .fb-comment-list{margin-top:8px}
+.fb-overall .fb-comment-item{background:#fff;border:1px solid #e0e0e0;border-radius:4px;padding:6px 8px;margin-bottom:4px;font-size:11px;display:flex;justify-content:space-between;align-items:start}
+.fb-overall .fb-comment-text{flex:1;margin-right:8px}
+.fb-overall .fb-comment-meta{font-size:9px;color:#757575;margin-top:2px}
+.fb-overall .fb-remove-comment{background:none;border:none;color:#991b1b;cursor:pointer;font-size:13px;padding:0 2px}
+
+/* Export bar */
+.fb-export-bar{display:none;background:#1a2d4f;padding:8px 16px;align-items:center;justify-content:space-between}
+body.feedback-mode .fb-export-bar{display:flex}
+.fb-export-bar span{color:rgba(255,255,255,.7);font-size:11px}
+.fb-export-bar .fb-count{color:#f59e0b;font-weight:600}
+.fb-export-bar button{font-size:11px;padding:4px 14px;border-radius:4px;border:none;cursor:pointer;font-family:var(--font-sans)}
+.fb-export-btn{background:#f59e0b;color:#000;font-weight:500}
+.fb-export-btn:hover{background:#d97706}
+.fb-clear-btn{background:rgba(255,255,255,.1);color:rgba(255,255,255,.7);margin-left:8px}
+.fb-clear-btn:hover{background:rgba(255,255,255,.2);color:#fff}
+
+/* Version badge */
+.version-badge{background:rgba(255,255,255,.1);color:rgba(255,255,255,.5);font-size:10px;padding:2px 8px;border-radius:3px;margin-left:10px}
+</style>
+</head>
+<body>
+<div class="dw">
+<div class="topbar">
+  <div><div class="topbar-title">Infrastructure Upgrade Programme — QS Cost Validation Dashboard</div><div class="topbar-sub">VMO2 · Network Design & Build · Q1 2026</div></div>
+  <div class="topbar-right">Updated daily · Last refresh 07 Apr 2026 08:41<button class="fb-toggle" onclick="toggleFeedbackMode()">&#x1F4AC; Feedback</button><span class="version-badge">v1.0</span></div>
+</div>
+<div class="tabs">
+  <div class="tab on">Cost Validation</div>
+</div>
+<div class="fb-export-bar">
+  <span>Feedback Mode — <span class="fb-count" id="fbCount">0</span> comments</span>
+  <div>
+    <button class="fb-export-btn" onclick="exportFeedback()">Submit Feedback</button>
+    <button class="fb-clear-btn" onclick="clearAllFeedback()">Clear All</button>
+  </div>
+</div>
+
+<div class="pg on" id="pg0" data-tab="Cost Validation">
+<div class="fb-overall" id="fbOverall">
+  <h4>Overall Dashboard Feedback</h4>
+  <div style="display:flex;gap:6px;align-items:end">
+    <div style="flex:1">
+      <textarea id="fbOverallInput" placeholder="Add overall feedback about this dashboard..."></textarea>
+      <div style="display:flex;align-items:center;gap:6px">
+        <select id="fbOverallPriority">
+          <option value="high">&#x1F534; High</option>
+          <option value="medium" selected>&#x1F7E1; Medium</option>
+          <option value="low">&#x1F7E2; Low</option>
+        </select>
+        <button class="fb-save" onclick="addOverallComment()">Add Comment</button>
+      </div>
+    </div>
+  </div>
+  <div class="fb-comment-list" id="fbOverallComments"></div>
+</div>
+
+<!-- Future-State Banner -->
+<div class="illustrative-banner" style="background:#fef3c7;border:1px solid #f59e0b;font-size:11px">
+  &#x26A0;&#xFE0F; FUTURE-STATE PROTOTYPE — NO LIVE DATA &nbsp;|&nbsp; Prerequisites: SiteFlo pipeline, Dynamo DD data, cost models integration
+</div>
+
+<!-- Filters -->
+<div class="fb">
+  <span class="fl">Region</span><select><option>All</option><option>UK - South</option><option>UK - North</option><option>UK - Midlands</option><option>Scotland</option><option>Wales</option></select>
+  <span class="fl">Design Type</span><select><option>All</option><option>Standard</option><option>Non-Standard</option><option>MORAN</option></select>
+  <span class="fl">Project Type</span><select><option>All</option><option>Greenfield</option><option>Rooftop</option><option>Upgrade</option></select>
+  <span class="fl">Supplier</span><select><option>All</option><option>Circet UK</option><option>Clarke Telecom</option><option>Telent</option></select>
+  <span class="fl">Date Range</span><input type="date" value="2025-10-01"> <span class="fl">to</span> <input type="date" value="2026-04-07">
+</div>
+
+<!-- KPI Row: 5 cards -->
+<div class="krow k5" id="kpiRow">
+  <div class="kpi red" id="kpiOverThreshold" data-visual-id="kpi-over-threshold" data-visual-name="Sites Over Threshold">
+    <div class="kpi-lbl">Sites Over Threshold</div>
+    <div class="kpi-val">47</div>
+    <div class="kpi-sub">Sites exceeding &pound;80k total cost</div>
+  </div>
+  <div class="kpi red" id="kpiAvgVariance" data-visual-id="kpi-avg-variance" data-visual-name="Avg Cost Variance">
+    <div class="kpi-lbl">Avg Cost Variance</div>
+    <div class="kpi-val">+14.2%</div>
+    <div class="kpi-sub">Actual vs estimate across all sites</div>
+  </div>
+  <div class="kpi red" id="kpiPortfolioOverspend" data-visual-id="kpi-portfolio-overspend" data-visual-name="Portfolio Overspend">
+    <div class="kpi-lbl">Portfolio Overspend</div>
+    <div class="kpi-val">&pound;1.8M</div>
+    <div class="kpi-sub">Total &pound; above estimates</div>
+  </div>
+  <div class="kpi grn" id="kpiWithinBudget" data-visual-id="kpi-within-budget" data-visual-name="Sites Within Budget">
+    <div class="kpi-lbl">Sites Within Budget</div>
+    <div class="kpi-val">312</div>
+    <div class="kpi-sub">Actual cost &le; estimate</div>
+  </div>
+  <div class="kpi" id="kpiForecast" data-visual-id="kpi-forecast" data-visual-name="Forecast Final Cost">
+    <div class="kpi-lbl">Forecast Final Cost</div>
+    <div class="kpi-val">&pound;42.6M</div>
+    <div class="kpi-sub">Projected total programme cost</div>
+  </div>
+</div>
+
+<!-- Charts Row 1 -->
+<div class="cg2">
+  <div class="cc" id="cardWaterfall" data-visual-id="chart-cost-waterfall" data-visual-name="Cost Variance Waterfall">
+    <h4>Cost Variance Waterfall</h4>
+    <div style="position:relative;height:300px;overflow:hidden"><canvas id="chWaterfall"></canvas></div>
+  </div>
+  <div class="cc" id="cardThreshold" data-visual-id="chart-threshold-tracker" data-visual-name="Threshold Tracker">
+    <h4>Threshold Tracker — Top 15 Most Expensive Sites</h4>
+    <div style="position:relative;height:300px;overflow:hidden"><canvas id="chThreshold"></canvas></div>
+    <div class="leg">
+      <div class="li"><div class="lsq" style="background:#166534"></div> Below &pound;80k</div>
+      <div class="li"><div class="lsq" style="background:#d97706"></div> &pound;80k&ndash;&pound;100k</div>
+      <div class="li"><div class="lsq" style="background:#C8102E"></div> Above &pound;100k</div>
+      <div class="li" style="margin-left:12px"><div style="width:9px;height:2px;background:#C8102E"></div> &pound;80k threshold</div>
+      <div class="li"><div style="width:9px;height:2px;background:#2a5f8f;border-top:1px dashed #2a5f8f"></div> &pound;40k VMO2 share</div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row 2 -->
+<div class="cg2">
+  <div class="cc" id="cardComponentBreakdown" data-visual-id="chart-component-breakdown" data-visual-name="Cost Breakdown by Component Type">
+    <h4>Cost Breakdown by Component Type</h4>
+    <div style="position:relative;height:300px;overflow:hidden"><canvas id="chComponentBreakdown"></canvas></div>
+    <div class="leg">
+      <div class="li"><div class="lsq" style="background:#1a2d4f"></div> Structure</div>
+      <div class="li"><div class="lsq" style="background:#2a5f8f"></div> Antennas</div>
+      <div class="li"><div class="lsq" style="background:#5b9bd5"></div> Radios</div>
+      <div class="li"><div class="lsq" style="background:#d97706"></div> Power</div>
+      <div class="li"><div class="lsq" style="background:#C8102E"></div> Civils</div>
+      <div class="li"><div class="lsq" style="background:#757575"></div> Other</div>
+    </div>
+  </div>
+  <div class="cc" id="cardHistorical" data-visual-id="chart-historical-overspend" data-visual-name="Historical Overspend Pattern">
+    <h4>Historical Overspend Pattern — Monthly Avg Cost Variance (%)</h4>
+    <div style="position:relative;height:300px;overflow:hidden"><canvas id="chHistorical"></canvas></div>
+    <div class="leg">
+      <div class="li"><div class="lc" style="background:#C8102E"></div> Avg Cost Variance (%)</div>
+      <div class="li"><div style="width:9px;height:2px;background:#166534"></div> Target (0%)</div>
+    </div>
+  </div>
+</div>
+
+<!-- Table: Sites Exceeding Threshold -->
+<div class="cc" id="cardThresholdTable" data-visual-id="table-sites-exceeding" data-visual-name="Sites Exceeding Threshold">
+  <h4>Sites Exceeding Threshold</h4>
+  <div style="overflow-x:auto">
+    <table>
+      <thead>
+        <tr>
+          <th>CSR</th>
+          <th>Site Name</th>
+          <th>Region</th>
+          <th>Supplier</th>
+          <th>Design Type</th>
+          <th>Estimated Cost</th>
+          <th>Actual Cost</th>
+          <th>Variance (&pound;)</th>
+          <th>Variance (%)</th>
+          <th>Top Cost Driver</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="tblBody"></tbody>
+    </table>
+  </div>
+</div>
+
+</div><!-- end pg -->
+</div><!-- end dw -->
+
+<script>
+Chart.defaults.font.family='system-ui,-apple-system,sans-serif';
+Chart.defaults.font.size=10;
+Chart.defaults.color='#757575';
+
+/* ================================================================
+   INFO TEXTS
+   ================================================================ */
+const infoTexts={
+  kpiOverThreshold:"Sites where total cost exceeds \u00a380k threshold (VMO2 share: \u00a340k). Drives: immediate financial review and escalation.",
+  kpiAvgVariance:"Average (Actual - Estimate) / Estimate across all sites. Drives: estimating accuracy improvement.",
+  kpiPortfolioOverspend:"Aggregate overspend across all sites. Drives: budget reallocation and programme-level financial decisions.",
+  kpiWithinBudget:"Sites where actual cost \u2264 estimate. Drives: understanding what proportion of portfolio is on track.",
+  kpiForecast:"Projected final cost based on current actuals and remaining estimates. Drives: portfolio-level financial planning.",
+  chartWaterfall:"Breaks down what's driving overspend. Drives: targeting the largest cost drivers for reduction. Each bar shows the contribution to variance.",
+  chartThreshold:"Sites ranked by total cost against threshold. Drives: identifying which sites need immediate QS review.",
+  chartComponentBreakdown:"Cost composition per region/site group. Drives: identifying which component categories drive overspend in each region.",
+  chartHistorical:"Tracks whether overspend is improving or worsening over time. Drives: assessing effectiveness of cost control measures.",
+  tableSitesExceeding:"All sites exceeding budget threshold. Drives: site-level QS review prioritisation."
+};
+
+/* ================================================================
+   INFO ICON HELPERS
+   ================================================================ */
+function addInfoIcon(containerId, infoKey){
+  const container=document.getElementById(containerId);
+  if(!container) return;
+  const panelId='infoPanel_'+infoKey;
+  const btn=document.createElement('button');
+  btn.className='info-icon-btn';
+  btn.innerHTML='i';
+  btn.title='Show info';
+  btn.setAttribute('aria-label','Toggle information panel');
+  btn.onclick=function(e){
+    e.stopPropagation();
+    const panel=document.getElementById(panelId);
+    if(panel){
+      panel.classList.toggle('open');
+      btn.style.background=panel.classList.contains('open')?'#e8f0fe':'';
+      btn.style.color=panel.classList.contains('open')?'#2a5f8f':'';
+    }
+  };
+  container.appendChild(btn);
+  const panel=document.createElement('div');
+  panel.className='info-panel';
+  panel.id=panelId;
+  panel.textContent=infoTexts[infoKey]||'';
+  const h4=container.querySelector('h4');
+  if(h4 && h4.nextSibling){
+    h4.parentNode.insertBefore(panel,h4.nextSibling);
+  } else {
+    container.appendChild(panel);
+  }
+}
+
+function addInfoIconToEl(el, infoKey){
+  if(!el) return;
+  el.style.position='relative';
+  const panelId='infoPanel_'+infoKey;
+  const btn=document.createElement('button');
+  btn.className='info-icon-btn';
+  btn.innerHTML='i';
+  btn.title='Show info';
+  btn.onclick=function(e){
+    e.stopPropagation();
+    const panel=document.getElementById(panelId);
+    if(panel){
+      panel.classList.toggle('open');
+      btn.style.background=panel.classList.contains('open')?'#e8f0fe':'';
+      btn.style.color=panel.classList.contains('open')?'#2a5f8f':'';
+    }
+  };
+  el.appendChild(btn);
+  const panel=document.createElement('div');
+  panel.className='info-panel';
+  panel.id=panelId;
+  panel.textContent=infoTexts[infoKey]||'';
+  el.appendChild(panel);
+}
+
+/* ================================================================
+   CHART 1: COST VARIANCE WATERFALL
+   ================================================================ */
+(function(){
+  const ctx=document.getElementById('chWaterfall').getContext('2d');
+  // Waterfall: Estimate -> +Design Changes -> +Non-Standard -> +Supplier Variance -> +Scope Changes -> Actual
+  const labels=['Estimate','Design\nChanges','Non-Standard\nComponents','Supplier\nVariance','Scope\nChanges','Actual\nTotal'];
+  const base=[0,36.2,36.2+2.8,36.2+2.8+1.4,36.2+2.8+1.4+1.2,0];
+  const values=[36.2,2.8,1.4,1.2,1.0,42.6];
+  const colors=['#2a5f8f','#C8102E','#C8102E','#C8102E','#C8102E','#1a2d4f'];
+
+  new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:labels,
+      datasets:[
+        {label:'Base',data:base,backgroundColor:'transparent',borderWidth:0,barPercentage:0.6},
+        {label:'Value',data:values,backgroundColor:colors,borderWidth:0,barPercentage:0.6}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          callbacks:{
+            label:function(c){
+              if(c.datasetIndex===0) return null;
+              const i=c.dataIndex;
+              if(i===0) return 'Estimate: \u00a3'+values[i]+'M';
+              if(i===labels.length-1) return 'Actual Total: \u00a3'+values[i]+'M';
+              return '+\u00a3'+values[i]+'M';
+            }
+          }
+        }
+      },
+      scales:{
+        x:{stacked:true,grid:{display:false}},
+        y:{stacked:true,grid:{color:'#f0f0f0'},ticks:{callback:v=>'\u00a3'+v+'M'},min:0,max:48}
+      }
+    }
+  });
+})();
+
+/* ================================================================
+   CHART 2: THRESHOLD TRACKER — Horizontal Bar
+   ================================================================ */
+(function(){
+  const ctx=document.getElementById('chThreshold').getContext('2d');
+  const sites=[
+    {name:'CSR 88412',cost:142},{name:'CSR 91003',cost:128},{name:'CSR 76291',cost:118},
+    {name:'CSR 45012',cost:112},{name:'CSR 33987',cost:105},{name:'CSR 62714',cost:99},
+    {name:'CSR 50321',cost:96},{name:'CSR 81209',cost:93},{name:'CSR 27654',cost:89},
+    {name:'CSR 39102',cost:86},{name:'CSR 14587',cost:82},{name:'CSR 70293',cost:78},
+    {name:'CSR 55018',cost:74},{name:'CSR 42376',cost:71},{name:'CSR 68901',cost:67}
+  ].reverse();
+
+  const bgColors=sites.map(s=>s.cost>100?'#C8102E':s.cost>80?'#d97706':'#166534');
+
+  new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:sites.map(s=>s.name),
+      datasets:[{
+        data:sites.map(s=>s.cost),
+        backgroundColor:bgColors,
+        borderWidth:0,
+        barPercentage:0.7
+      }]
+    },
+    options:{
+      indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:c=>'\u00a3'+c.raw+'k'}},
+        annotation:undefined
+      },
+      scales:{
+        x:{grid:{color:'#f0f0f0'},ticks:{callback:v=>'\u00a3'+v+'k'},max:160},
+        y:{grid:{display:false}}
+      }
+    },
+    plugins:[{
+      id:'thresholdLines',
+      afterDraw:function(chart){
+        const xScale=chart.scales.x;
+        const yScale=chart.scales.y;
+        const ctx2=chart.ctx;
+        // 80k threshold line
+        const x80=xScale.getPixelForValue(80);
+        ctx2.save();
+        ctx2.strokeStyle='#C8102E';
+        ctx2.lineWidth=2;
+        ctx2.setLineDash([]);
+        ctx2.beginPath();
+        ctx2.moveTo(x80,yScale.top);
+        ctx2.lineTo(x80,yScale.bottom);
+        ctx2.stroke();
+        ctx2.fillStyle='#C8102E';
+        ctx2.font='bold 9px system-ui';
+        ctx2.fillText('\u00a380k',x80+3,yScale.top+10);
+        // 40k VMO2 share line
+        const x40=xScale.getPixelForValue(40);
+        ctx2.strokeStyle='#2a5f8f';
+        ctx2.lineWidth=1.5;
+        ctx2.setLineDash([4,3]);
+        ctx2.beginPath();
+        ctx2.moveTo(x40,yScale.top);
+        ctx2.lineTo(x40,yScale.bottom);
+        ctx2.stroke();
+        ctx2.fillStyle='#2a5f8f';
+        ctx2.fillText('\u00a340k VMO2',x40+3,yScale.top+10);
+        ctx2.restore();
+      }
+    }]
+  });
+})();
+
+/* ================================================================
+   CHART 3: COST BREAKDOWN BY COMPONENT TYPE — Stacked Bar
+   ================================================================ */
+(function(){
+  const ctx=document.getElementById('chComponentBreakdown').getContext('2d');
+  const regions=['South','North','Midlands','Scotland','Wales'];
+  const structure=[3.2,2.8,2.1,1.6,0.9];
+  const antennas=[2.4,2.1,1.8,1.2,0.7];
+  const radios=[2.8,2.5,2.0,1.4,0.8];
+  const power=[1.6,1.4,1.1,0.8,0.5];
+  const civils=[1.8,1.5,1.2,0.9,0.6];
+  const other=[0.8,0.7,0.5,0.4,0.3];
+
+  new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:regions,
+      datasets:[
+        {label:'Structure',data:structure,backgroundColor:'#1a2d4f'},
+        {label:'Antennas',data:antennas,backgroundColor:'#2a5f8f'},
+        {label:'Radios',data:radios,backgroundColor:'#5b9bd5'},
+        {label:'Power',data:power,backgroundColor:'#d97706'},
+        {label:'Civils',data:civils,backgroundColor:'#C8102E'},
+        {label:'Other',data:other,backgroundColor:'#757575'}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:c=>c.dataset.label+': \u00a3'+c.raw+'M'}}
+      },
+      scales:{
+        x:{stacked:true,grid:{display:false}},
+        y:{stacked:true,grid:{color:'#f0f0f0'},ticks:{callback:v=>'\u00a3'+v+'M'}}
+      }
+    }
+  });
+})();
+
+/* ================================================================
+   CHART 4: HISTORICAL OVERSPEND PATTERN — Line
+   ================================================================ */
+(function(){
+  const ctx=document.getElementById('chHistorical').getContext('2d');
+  const months=['May 25','Jun 25','Jul 25','Aug 25','Sep 25','Oct 25','Nov 25','Dec 25','Jan 26','Feb 26','Mar 26','Apr 26'];
+  const variance=[18.5,21.2,19.8,16.4,17.1,15.3,14.8,13.2,15.6,14.9,13.8,14.2];
+  const target=months.map(()=>0);
+
+  new Chart(ctx,{
+    type:'line',
+    data:{
+      labels:months,
+      datasets:[
+        {label:'Avg Cost Variance (%)',data:variance,borderColor:'#C8102E',backgroundColor:'rgba(200,16,46,0.08)',fill:true,tension:0.3,pointRadius:3,pointBackgroundColor:'#C8102E',borderWidth:2},
+        {label:'Target (0%)',data:target,borderColor:'#166534',borderWidth:1.5,borderDash:[5,3],pointRadius:0,fill:false}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.raw+'%'}}
+      },
+      scales:{
+        x:{grid:{display:false}},
+        y:{grid:{color:'#f0f0f0'},ticks:{callback:v=>v+'%'},min:-5,max:25}
+      }
+    }
+  });
+})();
+
+/* ================================================================
+   TABLE: SITES EXCEEDING THRESHOLD
+   ================================================================ */
+(function(){
+  const rows=[
+    {csr:'88412',name:'HIGHGATE TOWER',region:'South',supplier:'Circet UK',design:'Non-Standard',est:89000,act:142000,driver:'Non-Standard Structure',status:'Escalated'},
+    {csr:'91003',name:'BEACON HILL NORTH',region:'North',supplier:'Clarke Telecom',design:'Non-Standard',est:95000,act:128000,driver:'Civils Overrun',status:'Under Review'},
+    {csr:'76291',name:'WESTFIELD PARK',region:'Midlands',supplier:'Telent',design:'Non-Standard',est:86000,act:118000,driver:'Design Changes',status:'Escalated'},
+    {csr:'45012',name:'MANOR FARM EAST',region:'South',supplier:'Circet UK',design:'Standard',est:82000,act:112000,driver:'Supplier Variance',status:'Under Review'},
+    {csr:'33987',name:'OAKWOOD HEIGHTS',region:'North',supplier:'Clarke Telecom',design:'Non-Standard',est:78000,act:105000,driver:'Scope Changes',status:'Rejected'},
+    {csr:'62714',name:'RIVERSIDE INDUSTRIAL',region:'Scotland',supplier:'Telent',design:'MORAN',est:81000,act:99000,driver:'Non-Standard Components',status:'Under Review'},
+    {csr:'50321',name:'CHURCH LANE SITE',region:'Wales',supplier:'Circet UK',design:'Standard',est:75000,act:96000,driver:'Power Equipment',status:'Approved'},
+    {csr:'81209',name:'GREENWAY CROSSING',region:'South',supplier:'Clarke Telecom',design:'Non-Standard',est:79000,act:93000,driver:'Design Changes',status:'Under Review'},
+    {csr:'27654',name:'HILLTOP FARM',region:'Midlands',supplier:'Telent',design:'Standard',est:72000,act:89000,driver:'Civils Overrun',status:'Escalated'},
+    {csr:'39102',name:'STATION ROAD MAST',region:'North',supplier:'Circet UK',design:'MORAN',est:74000,act:86000,driver:'Non-Standard Structure',status:'Under Review'},
+    {csr:'14587',name:'MILL LANE TOWER',region:'South',supplier:'Clarke Telecom',design:'Non-Standard',est:68000,act:82000,driver:'Supplier Variance',status:'Approved'},
+    {csr:'70293',name:'LAKESIDE PARK',region:'Scotland',supplier:'Telent',design:'Standard',est:65000,act:78000,driver:'Scope Changes',status:'Under Review'},
+    {csr:'55018',name:'BROADWAY JUNCTION',region:'Wales',supplier:'Circet UK',design:'Non-Standard',est:63000,act:74000,driver:'Power Equipment',status:'Escalated'},
+    {csr:'42376',name:'CROWN INDUSTRIAL',region:'Midlands',supplier:'Clarke Telecom',design:'Standard',est:59000,act:71000,driver:'Design Changes',status:'Under Review'},
+    {csr:'68901',name:'FIELDS END LANE',region:'North',supplier:'Telent',design:'MORAN',est:56000,act:67000,driver:'Non-Standard Components',status:'Approved'}
+  ];
+
+  const tbody=document.getElementById('tblBody');
+  rows.forEach(r=>{
+    const varPound=r.act-r.est;
+    const varPct=((varPound/r.est)*100).toFixed(1);
+    const statusClass=r.status==='Escalated'?'pr':r.status==='Under Review'?'pa':r.status==='Approved'?'pg2':'pr';
+    tbody.innerHTML+=
+      '<tr>'+
+      '<td>'+r.csr+'</td>'+
+      '<td>'+r.name+'</td>'+
+      '<td>'+r.region+'</td>'+
+      '<td>'+r.supplier+'</td>'+
+      '<td>'+r.design+'</td>'+
+      '<td>\u00a3'+r.est.toLocaleString()+'</td>'+
+      '<td>\u00a3'+r.act.toLocaleString()+'</td>'+
+      '<td style="color:#C8102E;font-weight:500">+\u00a3'+varPound.toLocaleString()+'</td>'+
+      '<td style="color:#C8102E;font-weight:500">+'+varPct+'%</td>'+
+      '<td>'+r.driver+'</td>'+
+      '<td><span class="pill '+statusClass+'">'+r.status+'</span></td>'+
+      '</tr>';
+  });
+})();
+
+/* ================================================================
+   ATTACH INFO ICONS
+   ================================================================ */
+addInfoIconToEl(document.getElementById('kpiOverThreshold'),'kpiOverThreshold');
+addInfoIconToEl(document.getElementById('kpiAvgVariance'),'kpiAvgVariance');
+addInfoIconToEl(document.getElementById('kpiPortfolioOverspend'),'kpiPortfolioOverspend');
+addInfoIconToEl(document.getElementById('kpiWithinBudget'),'kpiWithinBudget');
+addInfoIconToEl(document.getElementById('kpiForecast'),'kpiForecast');
+addInfoIcon('cardWaterfall','chartWaterfall');
+addInfoIcon('cardThreshold','chartThreshold');
+addInfoIcon('cardComponentBreakdown','chartComponentBreakdown');
+addInfoIcon('cardHistorical','chartHistorical');
+addInfoIcon('cardThresholdTable','tableSitesExceeding');
+
+/* ================================================================
+   FEEDBACK SYSTEM
+   ================================================================ */
+const DASHBOARD_ID = 'US7';
+const DASHBOARD_VERSION = '1.0';
+const FEEDBACK_EMAIL = 'marta@inferencegroup.com';
+
+let feedbackData = {
+  dashboard: DASHBOARD_ID,
+  version: DASHBOARD_VERSION,
+  reviewer: '',
+  date: new Date().toISOString().split('T')[0],
+  overall: [],
+  visuals: []
+};
+
+function loadFeedback(){
+  const saved = localStorage.getItem('fb_' + DASHBOARD_ID);
+  if(saved){ try{ feedbackData = JSON.parse(saved); } catch(e){} }
+  renderOverallComments();
+  updateBubbles();
+  updateCount();
+}
+
+function saveFeedback(){
+  localStorage.setItem('fb_' + DASHBOARD_ID, JSON.stringify(feedbackData));
+  updateCount();
+}
+
+function toggleFeedbackMode(){
+  document.body.classList.toggle('feedback-mode');
+  const btn = document.querySelector('.fb-toggle');
+  btn.classList.toggle('active');
+  btn.textContent = document.body.classList.contains('feedback-mode') ? '\u2715 Exit Feedback' : '\uD83D\uDCAC Feedback';
+}
+
+function initFeedbackBubbles(){
+  document.querySelectorAll('[data-visual-id]').forEach(el => {
+    if(el.querySelector('.fb-bubble')) return;
+    el.style.position = 'relative';
+    const bubble = document.createElement('button');
+    bubble.className = 'fb-bubble';
+    bubble.innerHTML = '\uD83D\uDCAC';
+    bubble.title = 'Add feedback for: ' + (el.dataset.visualName || el.dataset.visualId);
+    bubble.onclick = function(e){ e.stopPropagation(); openFeedbackPanel(el); };
+    el.appendChild(bubble);
+  });
+}
+
+function openFeedbackPanel(el){
+  document.querySelectorAll('.fb-input-panel.open').forEach(p => p.classList.remove('open'));
+  let panel = el.querySelector('.fb-input-panel');
+  if(!panel){
+    panel = document.createElement('div');
+    panel.className = 'fb-input-panel';
+    const vid = el.dataset.visualId;
+    const vname = el.dataset.visualName || vid;
+    const tab = el.closest('[data-tab]')?.dataset.tab || 'Unknown';
+    const existing = feedbackData.visuals.filter(v => v.id === vid);
+    let existingHtml = '';
+    if(existing.length > 0){
+      existingHtml = '<div class="fb-existing"><strong>Existing comments:</strong><br>' +
+        existing.map((c,i) => '\u2022 [' + c.priority + '] ' + c.type + ': ' + c.comment + ' <button class="fb-remove-comment" onclick="removeVisualComment(\'' + vid + '\',' + i + ',\'' + tab + '\');this.closest(\'.fb-input-panel\').classList.remove(\'open\');">\u2715</button>').join('<br>') + '</div>';
+    }
+    panel.innerHTML =
+      '<div style="font-weight:600;margin-bottom:6px;font-size:12px">' + vname + '</div>' +
+      '<div style="color:#757575;margin-bottom:6px">Tab: ' + tab + '</div>' +
+      existingHtml +
+      '<textarea id="fbInput_' + vid + '" placeholder="What should change about this visual?"></textarea>' +
+      '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">' +
+        '<select id="fbType_' + vid + '"><option value="change">\u270F\uFE0F Change</option><option value="remove">\uD83D\uDDD1\uFE0F Remove</option><option value="add">\u2795 Add new</option><option value="question">\u2753 Question</option><option value="approve">\u2705 Approve</option></select>' +
+        '<select id="fbPriority_' + vid + '"><option value="high">\uD83D\uDD34 High</option><option value="medium" selected>\uD83D\uDFE1 Medium</option><option value="low">\uD83D\uDFE2 Low</option></select>' +
+        '<button class="fb-cancel" onclick="this.closest(\'.fb-input-panel\').classList.remove(\'open\')">Cancel</button>' +
+        '<button class="fb-save" onclick="saveVisualComment(\'' + vid + '\',\'' + vname + '\',\'' + tab + '\')">Save</button>' +
+      '</div>';
+    el.appendChild(panel);
+  } else {
+    const vid = el.dataset.visualId;
+    const existing = feedbackData.visuals.filter(v => v.id === vid);
+    const existingDiv = panel.querySelector('.fb-existing');
+    if(existing.length > 0){
+      const html = '<div class="fb-existing"><strong>Existing comments:</strong><br>' +
+        existing.map((c,i) => '\u2022 [' + c.priority + '] ' + c.type + ': ' + c.comment + ' <button class="fb-remove-comment" onclick="removeVisualComment(\'' + vid + '\',' + i + ',\'' + (el.closest('[data-tab]')?.dataset.tab||'Unknown') + '\');this.closest(\'.fb-input-panel\').classList.remove(\'open\');">\u2715</button>').join('<br>') + '</div>';
+      if(existingDiv) existingDiv.outerHTML = html;
+      else panel.querySelector('textarea').insertAdjacentHTML('beforebegin', html);
+    } else if(existingDiv){ existingDiv.remove(); }
+  }
+  panel.classList.add('open');
+}
+
+function saveVisualComment(id, name, tab){
+  const comment = document.getElementById('fbInput_' + id)?.value.trim();
+  if(!comment) return;
+  feedbackData.visuals.push({ id:id, name:name, tab:tab, type:document.getElementById('fbType_'+id)?.value||'change', comment:comment, priority:document.getElementById('fbPriority_'+id)?.value||'medium' });
+  saveFeedback();
+  updateBubbles();
+  const input = document.getElementById('fbInput_' + id);
+  if(input) input.value = '';
+  document.querySelectorAll('.fb-input-panel.open').forEach(p => p.classList.remove('open'));
+}
+
+function removeVisualComment(id, index, tab){
+  const matching = feedbackData.visuals.filter(v => v.id === id);
+  if(matching[index]){
+    const globalIndex = feedbackData.visuals.indexOf(matching[index]);
+    feedbackData.visuals.splice(globalIndex, 1);
+    saveFeedback();
+    updateBubbles();
+  }
+}
+
+function updateBubbles(){
+  document.querySelectorAll('[data-visual-id]').forEach(el => {
+    const vid = el.dataset.visualId;
+    const bubble = el.querySelector('.fb-bubble');
+    if(!bubble) return;
+    const count = feedbackData.visuals.filter(v => v.id === vid).length;
+    bubble.classList.toggle('has-comment', count > 0);
+    const oldBadge = bubble.querySelector('.fb-badge');
+    if(oldBadge) oldBadge.remove();
+    if(count > 0){
+      const badge = document.createElement('span');
+      badge.className = 'fb-badge';
+      badge.textContent = count;
+      bubble.appendChild(badge);
+    }
+  });
+}
+
+function addOverallComment(){
+  const input = document.getElementById('fbOverallInput');
+  const priority = document.getElementById('fbOverallPriority');
+  if(!input || !input.value.trim()) return;
+  feedbackData.overall.push({ comment: input.value.trim(), priority: priority?.value || 'medium' });
+  saveFeedback();
+  renderOverallComments();
+  input.value = '';
+}
+
+function renderOverallComments(){
+  const container = document.getElementById('fbOverallComments');
+  if(!container) return;
+  container.innerHTML = feedbackData.overall.map((c, i) =>
+    '<div class="fb-comment-item"><div><div class="fb-comment-text">' + c.comment + '</div><div class="fb-comment-meta">' + (c.priority==='high'?'\uD83D\uDD34':c.priority==='medium'?'\uD83D\uDFE1':'\uD83D\uDFE2') + ' ' + c.priority + ' priority</div></div><button class="fb-remove-comment" onclick="removeOverallComment(' + i + ')">\u2715</button></div>'
+  ).join('');
+}
+
+function removeOverallComment(index){
+  feedbackData.overall.splice(index, 1);
+  saveFeedback();
+  renderOverallComments();
+}
+
+function updateCount(){
+  const el = document.getElementById('fbCount');
+  if(el) el.textContent = feedbackData.overall.length + feedbackData.visuals.length;
+}
+
+function exportFeedback(){
+  feedbackData.reviewer = prompt('Your name:') || 'Anonymous';
+  feedbackData.date = new Date().toISOString().split('T')[0];
+  const json = JSON.stringify(feedbackData, null, 2);
+  const commentCount = feedbackData.overall.length + feedbackData.visuals.length;
+  fetch('/api/feedback', {method:'POST',headers:{'Content-Type':'application/json'},body:json})
+  .then(r => r.json())
+  .then(data => {
+    if(data.success){
+      showSubmitSuccess(commentCount, feedbackData.reviewer);
+      feedbackData.overall=[];feedbackData.visuals=[];
+      saveFeedback();renderOverallComments();updateBubbles();
+    }
+  })
+  .catch(() => { showSubmitSuccess(commentCount, feedbackData.reviewer); });
+}
+
+function showSubmitSuccess(count, reviewer){
+  let modal = document.getElementById('fbFallbackModal');
+  if(modal) modal.remove();
+  modal = document.createElement('div');
+  modal.id = 'fbFallbackModal';
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:10000;display:flex;align-items:flex-start;justify-content:center;padding-top:60px';
+  modal.innerHTML =
+    '<div style="background:#fff;border-radius:12px;padding:36px;max-width:420px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.2);font-family:system-ui,sans-serif;text-align:center">' +
+    '<div style="width:56px;height:56px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px">✓</div>' +
+    '<h3 style="font-size:18px;color:#1a2d4f;margin-bottom:8px">Feedback Submitted</h3>' +
+    '<p style="font-size:13px;color:#757575;margin-bottom:6px">' + count + ' comment' + (count!==1?'s':'') + ' from <strong>' + reviewer + '</strong></p>' +
+    '<p style="font-size:12px;color:#757575;margin-bottom:24px">The team will review your comments and get back to you with any questions or updates.</p>' +
+    '<button onclick="document.getElementById(\'fbFallbackModal\').remove()" style="background:#1a2d4f;color:#fff;border:none;padding:10px 28px;border-radius:6px;cursor:pointer;font-size:13px;font-family:inherit">Done</button>' +
+    '</div>';
+  modal.onclick = function(e){ if(e.target === modal) modal.remove(); };
+  document.body.appendChild(modal);
+}
+
+function startStatusPolling(){
+  const poll=setInterval(()=>{
+    fetch('/api/status/'+DASHBOARD_ID).then(r=>r.json()).then(s=>{
+      if(s.status==='complete'){clearInterval(poll);showStatusBanner('success','Dashboard updated! Refresh to see changes.');
+        const b=document.getElementById('statusBanner');if(b){const btn=document.createElement('button');btn.textContent='Refresh';btn.style.cssText='margin-left:12px;padding:4px 12px;border:none;border-radius:4px;background:#1a2d4f;color:#fff;cursor:pointer;font-size:11px';btn.onclick=()=>location.reload();b.appendChild(btn);}
+      }else if(s.status==='questions_pending'){clearInterval(poll);showStatusBanner('warning','Claude has clarifying questions.');loadQuestions();}
+      else if(s.status==='error'){clearInterval(poll);showStatusBanner('error','Error: '+(s.message||'Failed'));}
+    }).catch(()=>clearInterval(poll));
+  },3000);
+}
+function showStatusBanner(type,message){
+  let b=document.getElementById('statusBanner');
+  if(!b){b=document.createElement('div');b.id='statusBanner';const t=document.querySelector('.topbar');t.parentNode.insertBefore(b,t.nextSibling);}
+  const c={success:{bg:'#dcfce7',border:'#166534',text:'#166534'},warning:{bg:'#fef3c7',border:'#d97706',text:'#92400e'},error:{bg:'#fee2e2',border:'#991b1b',text:'#991b1b'},info:{bg:'#e0f2fe',border:'#0284c7',text:'#0369a1'}}[type]||{bg:'#e0f2fe',border:'#0284c7',text:'#0369a1'};
+  b.style.cssText='padding:10px 18px;font-size:12px;display:flex;align-items:center;gap:8px;background:'+c.bg+';border-bottom:2px solid '+c.border+';color:'+c.text;
+  b.innerHTML=message;
+}
+function loadQuestions(){
+  fetch('/api/questions/'+DASHBOARD_ID).then(r=>r.json()).then(d=>{
+    if(d.questions&&d.questions.length>0)showQuestionsPanel(d.questions);
+  }).catch(()=>{});
+}
+function showQuestionsPanel(questions){
+  let p=document.getElementById('questionsPanel');
+  if(!p){p=document.createElement('div');p.id='questionsPanel';p.style.cssText='background:#fffbeb;border:1px solid #f59e0b;border-radius:8px;padding:16px 20px;margin:14px;font-size:12px';
+    const ref=document.querySelector('.fb-export-bar');
+    if(ref)ref.parentNode.insertBefore(p,ref.nextSibling);
+    else document.querySelector('.topbar').after(p);
+  }
+  p.innerHTML='<h4 style="color:#92400e;margin-bottom:12px;font-size:14px">Clarifying Questions from Claude</h4>'+
+    '<p style="color:#78350f;margin-bottom:12px">Please answer these questions so changes can be applied:</p>'+
+    questions.map((q,i)=>'<div style="background:#fff;border:1px solid #e0e0e0;border-radius:6px;padding:10px;margin-bottom:8px">'+
+      '<div style="font-weight:600;margin-bottom:4px">Q'+(i+1)+': '+q.question+'</div>'+
+      (q.context?'<div style="color:#757575;font-size:11px;margin-bottom:6px">Context: '+q.context+'</div>':'')+
+      '<textarea id="answer_'+i+'" placeholder="Your answer..." style="width:100%;border:1px solid #e0e0e0;border-radius:4px;padding:6px;font-size:11px;font-family:inherit;min-height:40px;margin-top:4px"></textarea></div>').join('')+
+    '<button onclick="submitAnswers('+questions.length+')" style="background:#1a2d4f;color:#fff;border:none;padding:8px 20px;border-radius:4px;cursor:pointer;font-size:12px;margin-top:8px">Submit Answers</button>';
+}
+function submitAnswers(count){
+  const answers=[];for(let i=0;i<count;i++){const el=document.getElementById('answer_'+i);answers.push(el?el.value.trim():'');}
+  fetch('/api/answers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dashboard:DASHBOARD_ID,answers,date:new Date().toISOString().split('T')[0]})})
+  .then(r=>r.json()).then(d=>{
+    if(d.success){const p=document.getElementById('questionsPanel');if(p)p.remove();showStatusBanner('success','Answers submitted! Processing...');startStatusPolling();}
+  }).catch(()=>showStatusBanner('error','Could not submit answers.'));
+}
+
+function clearAllFeedback(){
+  if(!confirm('Clear all feedback comments?')) return;
+  feedbackData.overall = [];
+  feedbackData.visuals = [];
+  saveFeedback();
+  renderOverallComments();
+  updateBubbles();
+}
+
+// Initialise
+document.addEventListener('DOMContentLoaded', function(){
+  initFeedbackBubbles();
+  loadFeedback();
+  fetch('/api/questions/'+DASHBOARD_ID).then(r=>r.json()).then(d=>{
+    if(d.questions&&d.questions.length>0){document.body.classList.add('feedback-mode');
+      const btn=document.querySelector('.fb-toggle');if(btn){btn.classList.add('active');btn.textContent='\u2715 Exit Feedback';}
+      showStatusBanner('warning','Claude has clarifying questions.');showQuestionsPanel(d.questions);
+    }
+  }).catch(()=>{});
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>US5 — Equipment Recovery & Inventory v1.0</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{--font-sans:system-ui,-apple-system,sans-serif;--color-background-primary:#ffffff;--color-background-secondary:#f8f9fa;--color-background-tertiary:#f1f3f4;--color-text-primary:#212121;--color-text-secondary:#757575;--color-border-tertiary:#e0e0e0;--border-radius-lg:8px;--border-radius-md:6px}
+*{box-sizing:border-box;margin:0;padding:0}
+.dw{font-family:var(--font-sans);background:var(--color-background-tertiary)}
+.topbar{background:#1a2d4f;padding:10px 18px;display:flex;align-items:center;justify-content:space-between;border-radius:var(--border-radius-lg) var(--border-radius-lg) 0 0}
+.topbar-title{color:#fff;font-size:14px;font-weight:500}
+.topbar-sub{color:rgba(255,255,255,.5);font-size:11px;margin-top:2px}
+.topbar-right{color:rgba(255,255,255,.45);font-size:11px}
+.tabs{display:flex;background:var(--color-background-primary);border-bottom:1.5px solid var(--color-border-tertiary);padding:0 16px}
+.tab{padding:9px 16px;font-size:12px;color:var(--color-text-secondary);cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-1.5px;white-space:nowrap}
+.tab.on{color:#1a2d4f;font-weight:500;border-bottom-color:#C8102E}
+.tab:hover:not(.on){background:var(--color-background-secondary)}
+.pg{display:none;padding:14px;background:var(--color-background-secondary)}
+.pg.on{display:block}
+.fb{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--color-background-primary);padding:9px 12px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);margin-bottom:12px}
+.fb select,.fb input[type=text],.fb input[type=date]{font-size:12px;padding:3px 7px;border-radius:4px;border:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary);color:var(--color-text-primary);height:26px}
+.fl{font-size:11px;color:var(--color-text-secondary)}
+.krow{display:grid;gap:10px;margin-bottom:12px}
+.k5{grid-template-columns:repeat(5,minmax(0,1fr))}
+.k4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.k3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.k2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.kpi{background:var(--color-background-primary);border-radius:var(--border-radius-md);padding:11px 13px;border:0.5px solid var(--color-border-tertiary);position:relative}
+.kpi-lbl{font-size:11px;color:var(--color-text-secondary);line-height:1.3;margin-bottom:3px}
+.kpi-val{font-size:24px;font-weight:500;color:var(--color-text-primary);line-height:1}
+.kpi-sub{font-size:10px;margin-top:3px;color:var(--color-text-secondary)}
+.kpi.red .kpi-val{color:#C8102E}
+.kpi.amb .kpi-val{color:#d97706}
+.kpi.grn .kpi-val{color:#166534}
+.cg2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.cg3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.cc{background:var(--color-background-primary);border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);padding:12px;margin-bottom:0;overflow:hidden;position:relative}
+.cc h4{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-secondary);margin-bottom:10px}
+.leg{display:flex;gap:12px;flex-wrap:wrap;font-size:10px;color:var(--color-text-secondary);margin-top:8px}
+.li{display:flex;align-items:center;gap:4px}
+.lsq{width:9px;height:9px;border-radius:2px}
+.lc{width:9px;height:9px;border-radius:50%}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{font-size:10px;font-weight:500;color:var(--color-text-secondary);padding:6px 8px;text-align:left;border-bottom:1px solid var(--color-border-tertiary);background:var(--color-background-secondary);white-space:nowrap}
+td{padding:6px 8px;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-primary);vertical-align:middle}
+tr:hover td{background:var(--color-background-tertiary)}
+tr:last-child td{border-bottom:none}
+.pill{display:inline-block;padding:1px 7px;border-radius:20px;font-size:10px;font-weight:500;white-space:nowrap}
+.pr{background:#fee2e2;color:#991b1b}
+.pa{background:#fef3c7;color:#92400e}
+.pg2{background:#dcfce7;color:#166534}
+.pb{background:#dbeafe;color:#1e40af}
+.pn{background:var(--color-background-tertiary);color:var(--color-text-secondary)}
+
+/* Info icon styles */
+.info-icon-btn{position:absolute;top:8px;right:8px;width:18px;height:18px;border-radius:50%;border:1px solid #bbb;background:var(--color-background-secondary);color:#999;font-size:11px;line-height:16px;text-align:center;cursor:pointer;z-index:5;font-family:serif;font-weight:600;transition:background .2s,color .2s,border-color .2s}
+.info-icon-btn:hover{background:#e8f0fe;color:#2a5f8f;border-color:#2a5f8f}
+.info-panel{display:none;position:relative;background:#f0f4fa;border:1px solid #d0daea;border-radius:4px;padding:8px 10px;margin-top:8px;font-size:10px;line-height:1.5;color:#333;z-index:4;animation:infoFadeIn .2s ease}
+.info-panel.open{display:block}
+@keyframes infoFadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+
+/* Amber banner for illustrative data */
+.illustrative-banner{background:#fef3c7;border:1px solid #f59e0b;border-radius:4px;padding:5px 10px;font-size:10px;color:#92400e;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+
+/* Feedback Mode Toggle */
+.fb-toggle{background:#C8102E;border:1px solid #C8102E;color:#fff;font-size:12px;padding:6px 16px;border-radius:4px;cursor:pointer;font-family:var(--font-sans);transition:all .2s;font-weight:600}
+.fb-toggle:hover{background:#a00d24;border-color:#a00d24;color:#fff}
+.fb-toggle.active{background:#d97706;border-color:#d97706;color:#fff;font-weight:600}
+
+/* Feedback bubble on visuals */
+.fb-bubble{display:none;position:absolute;top:6px;right:28px;width:20px;height:20px;border-radius:50%;background:#d97706;color:#fff;font-size:12px;border:none;cursor:pointer;align-items:center;justify-content:center;z-index:1000;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .15s}
+.fb-bubble:hover{transform:scale(1.15)}
+.fb-bubble.has-comment{background:#C8102E}
+body.feedback-mode .fb-bubble{display:flex}
+
+/* Comment count badge */
+.fb-badge{position:absolute;top:-4px;right:-4px;width:14px;height:14px;border-radius:50%;background:#C8102E;color:#fff;font-size:8px;display:flex;align-items:center;justify-content:center;font-weight:700}
+
+/* Feedback input panel */
+.fb-input-panel{display:none;position:absolute;top:32px;right:6px;width:320px;max-height:400px;overflow-y:auto;background:#fff;border:1px solid #e0e0e0;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.15);z-index:1001;padding:10px;font-size:11px}
+.fb-input-panel.open{display:block}
+.fb-input-panel textarea{width:100%;border:1px solid #e0e0e0;border-radius:4px;padding:6px 8px;font-size:11px;font-family:var(--font-sans);resize:vertical;min-height:60px;margin-bottom:6px}
+.fb-input-panel select{font-size:11px;padding:3px 6px;border:1px solid #e0e0e0;border-radius:4px;margin-right:6px}
+.fb-input-panel button{font-size:11px;padding:3px 10px;border-radius:4px;border:none;cursor:pointer;font-family:var(--font-sans)}
+.fb-input-panel .fb-save{background:#1a2d4f;color:#fff}
+.fb-input-panel .fb-save:hover{background:#2a4060}
+.fb-input-panel .fb-cancel{background:#f1f3f4;color:#333;margin-right:6px}
+.fb-input-panel .fb-delete{background:#fee2e2;color:#991b1b;margin-left:auto}
+
+/* Overall feedback panel */
+.fb-overall{display:none;background:#fffbeb;border:1px solid #f59e0b;border-radius:6px;padding:12px 16px;margin:0 14px 12px 14px}
+body.feedback-mode .fb-overall{display:block}
+.fb-overall h4{font-size:12px;color:#92400e;margin-bottom:8px}
+.fb-overall textarea{width:100%;border:1px solid #e0e0e0;border-radius:4px;padding:6px 8px;font-size:11px;font-family:var(--font-sans);resize:vertical;min-height:50px;margin-bottom:6px}
+.fb-overall .fb-comment-list{margin-top:8px}
+.fb-overall .fb-comment-item{background:#fff;border:1px solid #e0e0e0;border-radius:4px;padding:6px 8px;margin-bottom:4px;font-size:11px;display:flex;justify-content:space-between;align-items:start}
+.fb-overall .fb-comment-text{flex:1;margin-right:8px}
+.fb-overall .fb-comment-meta{font-size:9px;color:#757575;margin-top:2px}
+.fb-overall .fb-remove-comment{background:none;border:none;color:#991b1b;cursor:pointer;font-size:13px;padding:0 2px}
+
+/* Export bar */
+.fb-export-bar{display:none;background:#1a2d4f;padding:8px 16px;align-items:center;justify-content:space-between}
+body.feedback-mode .fb-export-bar{display:flex}
+.fb-export-bar span{color:rgba(255,255,255,.7);font-size:11px}
+.fb-export-bar .fb-count{color:#f59e0b;font-weight:600}
+.fb-export-bar button{font-size:11px;padding:4px 14px;border-radius:4px;border:none;cursor:pointer;font-family:var(--font-sans)}
+.fb-export-btn{background:#f59e0b;color:#000;font-weight:500}
+.fb-export-btn:hover{background:#d97706}
+.fb-clear-btn{background:rgba(255,255,255,.1);color:rgba(255,255,255,.7);margin-left:8px}
+.fb-clear-btn:hover{background:rgba(255,255,255,.2);color:#fff}
+
+/* Version badge */
+.version-badge{background:rgba(255,255,255,.1);color:rgba(255,255,255,.5);font-size:10px;padding:2px 8px;border-radius:3px;margin-left:10px}
+
+/* Existing comment indicator */
+.fb-existing{background:#fef3c7;border:1px solid #fde68a;border-radius:4px;padding:6px 8px;margin-top:6px;font-size:10px;color:#92400e;line-height:1.4}
+.fb-existing strong{color:#78350f}
+
+/* Sankey flow diagram */
+.sankey-wrap{padding:10px 0}
+.sankey-row{display:flex;align-items:center;margin-bottom:4px;font-size:11px}
+.sankey-label{min-width:140px;text-align:right;padding-right:10px;color:var(--color-text-secondary);font-size:10px}
+.sankey-bar{height:26px;border-radius:3px;display:flex;align-items:center;padding-left:8px;font-size:10px;color:#fff;font-weight:500;transition:width .3s}
+.sankey-group{margin-bottom:12px}
+.sankey-group-title{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--color-text-secondary);margin-bottom:6px;padding-left:150px}
+.sankey-connector{width:2px;height:16px;background:#d0d0d0;margin-left:150px;margin-bottom:4px}
+</style>
+</head>
+<body>
+<div class="dw">
+<div class="topbar">
+  <div><div class="topbar-title">Infrastructure Upgrade Programme — Equipment Recovery & Inventory</div><div class="topbar-sub">VMO2 · Network Design & Build · Q1 2026</div></div>
+  <div class="topbar-right">Updated daily · Last refresh 07 Apr 2026 08:41<button class="fb-toggle" onclick="toggleFeedbackMode()">&#x1F4AC; Feedback</button><span class="version-badge">v1.0</span></div>
+</div>
+<div class="tabs">
+  <div class="tab on">Equipment Recovery & Inventory</div>
+</div>
+<div class="fb-export-bar">
+  <span>Feedback Mode — <span class="fb-count" id="fbCount">0</span> comments</span>
+  <div>
+    <button class="fb-export-btn" onclick="exportFeedback()">Submit Feedback</button>
+    <button class="fb-clear-btn" onclick="clearAllFeedback()">Clear All</button>
+  </div>
+</div>
+
+<div class="pg on" id="pg0" data-tab="Equipment Recovery & Inventory">
+<div class="fb-overall" id="fbOverall">
+  <h4>Overall Dashboard Feedback</h4>
+  <div style="display:flex;gap:6px;align-items:end">
+    <div style="flex:1">
+      <textarea id="fbOverallInput" placeholder="Add overall feedback about this dashboard..."></textarea>
+      <div style="display:flex;align-items:center;gap:6px">
+        <select id="fbOverallPriority">
+          <option value="high">&#x1F534; High</option>
+          <option value="medium" selected>&#x1F7E1; Medium</option>
+          <option value="low">&#x1F7E2; Low</option>
+        </select>
+        <button class="fb-save" onclick="addOverallComment()">Add Comment</button>
+      </div>
+    </div>
+  </div>
+  <div class="fb-comment-list" id="fbOverallComments"></div>
+</div>
+
+  <!-- Future-State Banner -->
+  <div class="illustrative-banner">
+    <span style="font-size:14px">&#x26A0;&#xFE0F;</span>
+    <span><strong>FUTURE-STATE PROTOTYPE — NO LIVE DATA</strong> &nbsp;|&nbsp; Prerequisites: Master Component Library (recovery status), GCP integration, SiteFlo, 3rd party stock management (Shields &amp; Others)</span>
+  </div>
+
+  <!-- Filters -->
+  <div class="fb">
+    <span class="fl">Manufacturer</span><select><option>All</option><option>Nokia</option><option>Ericsson</option><option>Commscope</option><option>Huawei</option></select>
+    <span class="fl">Model Number</span><select><option>All</option><option>AHEGHA</option><option>AHPMDG</option><option>ERS2238</option><option>BBU6631</option></select>
+    <span class="fl">Region</span><select><option>All</option><option>South</option><option>North</option><option>Midlands</option><option>Scotland</option></select>
+    <span class="fl">Site</span><select><option>All</option><option>HALSALL FIELD</option><option>NORWICH UNITED FC</option><option>BEACON 4</option></select>
+    <span class="fl">Date Range</span><input type="date" value="2025-04-01"> <span class="fl">to</span> <input type="date" value="2026-04-07">
+    <span class="fl">Recovery Type</span><select><option>All</option><option>Reuse</option><option>Recycle</option><option>Resell</option><option>Write-off</option></select>
+  </div>
+
+  <!-- KPI Row -->
+  <div class="krow k5" id="kpiRow">
+    <div class="kpi grn" data-visual-id="kpi-recovery-rate" data-visual-name="Recovery Rate">
+      <div class="kpi-lbl">Recovery Rate</div>
+      <div class="kpi-val">72%</div>
+      <div class="kpi-sub">Equipment recovered from decommissions</div>
+    </div>
+    <div class="kpi" data-visual-id="kpi-reuse-rate" data-visual-name="Reuse Rate">
+      <div class="kpi-lbl">Reuse Rate</div>
+      <div class="kpi-val">45%</div>
+      <div class="kpi-sub">Recovered items reused</div>
+    </div>
+    <div class="kpi" data-visual-id="kpi-avg-reuse-time" data-visual-name="Avg Reuse Time">
+      <div class="kpi-lbl">Avg Reuse Time</div>
+      <div class="kpi-val">34 days</div>
+      <div class="kpi-sub">Recovery to redeployment</div>
+    </div>
+    <div class="kpi grn" data-visual-id="kpi-value-recovered" data-visual-name="Value Recovered">
+      <div class="kpi-lbl">Value Recovered</div>
+      <div class="kpi-val">&pound;2.1M</div>
+      <div class="kpi-sub">Total recovered stock value</div>
+    </div>
+    <div class="kpi amb" data-visual-id="kpi-writeoff-rate" data-visual-name="Write-off Rate">
+      <div class="kpi-lbl">Write-off Rate</div>
+      <div class="kpi-val">12%</div>
+      <div class="kpi-sub">Recovered items written off</div>
+    </div>
+  </div>
+
+  <!-- Charts Row 1 -->
+  <div class="cg2">
+    <!-- Recovery Flow Sankey -->
+    <div class="cc" data-visual-id="chart-recovery-flow" data-visual-name="Recovery Flow (Sankey-style)">
+      <h4>Recovery Flow — Site removal to disposition</h4>
+      <div class="sankey-wrap">
+        <!-- Source: Removed from Sites -->
+        <div class="sankey-group">
+          <div class="sankey-row">
+            <div class="sankey-label">Removed from Sites</div>
+            <div class="sankey-bar" style="width:100%;background:#1a2d4f">100% &mdash; 1,420 items</div>
+          </div>
+        </div>
+        <div class="sankey-connector"></div>
+        <!-- Split: Recovered / Not Recovered -->
+        <div class="sankey-group">
+          <div class="sankey-group-title">Recovery Outcome</div>
+          <div class="sankey-row">
+            <div class="sankey-label">Recovered</div>
+            <div class="sankey-bar" style="width:72%;background:#166534">72% &mdash; 1,022</div>
+          </div>
+          <div class="sankey-row" style="margin-top:4px">
+            <div class="sankey-label">Not Recovered</div>
+            <div class="sankey-bar" style="width:28%;background:#C8102E">28% &mdash; 398</div>
+          </div>
+        </div>
+        <div class="sankey-connector"></div>
+        <!-- Recovered breakdown -->
+        <div class="sankey-group">
+          <div class="sankey-group-title">Recovered Disposition</div>
+          <div class="sankey-row">
+            <div class="sankey-label">Reuse</div>
+            <div class="sankey-bar" style="width:45%;background:#2a5f8f">45% &mdash; 639</div>
+          </div>
+          <div class="sankey-row" style="margin-top:3px">
+            <div class="sankey-label">Recycle</div>
+            <div class="sankey-bar" style="width:18%;background:#6b9bc3">18% &mdash; 256</div>
+          </div>
+          <div class="sankey-row" style="margin-top:3px">
+            <div class="sankey-label">Resell</div>
+            <div class="sankey-bar" style="width:9%;background:#94b8d4">9% &mdash; 127</div>
+          </div>
+        </div>
+        <div class="sankey-connector"></div>
+        <!-- Not Recovered breakdown -->
+        <div class="sankey-group">
+          <div class="sankey-group-title">Not Recovered Disposition</div>
+          <div class="sankey-row">
+            <div class="sankey-label">Scrapped</div>
+            <div class="sankey-bar" style="width:20%;background:#d97706">20% &mdash; 284</div>
+          </div>
+          <div class="sankey-row" style="margin-top:3px">
+            <div class="sankey-label">Lost</div>
+            <div class="sankey-bar" style="width:8%;background:#ef4444">8% &mdash; 114</div>
+          </div>
+        </div>
+      </div>
+      <div class="leg">
+        <div class="li"><div class="lsq" style="background:#166534"></div> Recovered</div>
+        <div class="li"><div class="lsq" style="background:#2a5f8f"></div> Reuse</div>
+        <div class="li"><div class="lsq" style="background:#6b9bc3"></div> Recycle</div>
+        <div class="li"><div class="lsq" style="background:#94b8d4"></div> Resell</div>
+        <div class="li"><div class="lsq" style="background:#d97706"></div> Scrapped</div>
+        <div class="li"><div class="lsq" style="background:#ef4444"></div> Lost</div>
+      </div>
+    </div>
+
+    <!-- Value Trend Monthly -->
+    <div class="cc" data-visual-id="chart-value-trend" data-visual-name="Value Trend — Monthly">
+      <h4>Value Trend — Monthly recovered value (&pound;)</h4>
+      <div style="position:relative;height:300px;overflow:hidden"><canvas id="chValueTrend"></canvas></div>
+      <div class="leg">
+        <div class="li"><div class="lsq" style="background:#1a2d4f"></div> Recovered Value</div>
+        <div class="li"><div class="lsq" style="background:#C8102E;opacity:.4"></div> Target</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Row 2 -->
+  <div class="cg2">
+    <!-- Inventory Aging -->
+    <div class="cc" data-visual-id="chart-inventory-aging" data-visual-name="Inventory Aging">
+      <h4>Inventory Aging — Equipment count by age band</h4>
+      <div style="position:relative;height:280px;overflow:hidden"><canvas id="chAging"></canvas></div>
+    </div>
+
+    <!-- Recovery by Equipment Type -->
+    <div class="cc" data-visual-id="chart-recovery-type" data-visual-name="Recovery by Equipment Type">
+      <h4>Recovery by Equipment Type</h4>
+      <div style="position:relative;height:280px;overflow:hidden"><canvas id="chRecoveryType"></canvas></div>
+      <div class="leg">
+        <div class="li"><div class="lsq" style="background:#2a5f8f"></div> Reuse</div>
+        <div class="li"><div class="lsq" style="background:#6b9bc3"></div> Recycle</div>
+        <div class="li"><div class="lsq" style="background:#94b8d4"></div> Resell</div>
+        <div class="li"><div class="lsq" style="background:#d97706"></div> Write-off</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table: Recovered Equipment Register -->
+  <div class="cc" data-visual-id="table-recovered-register" data-visual-name="Recovered Equipment Register" style="margin-bottom:12px">
+    <h4>Recovered Equipment Register</h4>
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>CSR</th>
+            <th>Site Name</th>
+            <th>Equipment</th>
+            <th>Manufacturer</th>
+            <th>Model</th>
+            <th>Qty</th>
+            <th>Date Removed</th>
+            <th>Status</th>
+            <th>Value (&pound;)</th>
+            <th>Age (days)</th>
+          </tr>
+        </thead>
+        <tbody id="tblRegister"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+Chart.defaults.font.family='system-ui,-apple-system,sans-serif';
+Chart.defaults.font.size=10;
+Chart.defaults.color='#757575';
+
+/* ================================================================
+   INFO TEXTS
+   ================================================================ */
+const infoTexts={
+  'kpi-recovery-rate': "Equipment recovered vs total decommissioned. Drives: recovery programme effectiveness",
+  'kpi-reuse-rate': "Recovered items placed back into service vs total recovered. Drives: reuse strategy assessment",
+  'kpi-avg-reuse-time': "Average time from site removal to reuse. Drives: logistics efficiency improvement",
+  'kpi-value-recovered': "Estimated value of recovered equipment. Drives: ROI of recovery programme",
+  'kpi-writeoff-rate': "Items that could not be reused, recycled, or resold. Drives: waste reduction targeting",
+  'chart-recovery-flow': "Equipment recovery flow from site removal to final disposition. Drives: identifying where in the pipeline value is lost",
+  'chart-value-trend': "Monthly trend of recovery value. Drives: tracking recovery programme against financial targets",
+  'chart-inventory-aging': "Age distribution of recovered stock in inventory. Older items risk obsolescence. Drives: prioritising items for reuse before value degrades",
+  'chart-recovery-type': "Recovery outcomes by equipment category. Drives: which equipment types have highest reuse potential",
+  'table-recovered-register': "Individual recovered items with current status. Drives: item-level tracking and disposition decisions"
+};
+
+/* ================================================================
+   INFO ICON HELPER
+   ================================================================ */
+function addInfoIcon(el, infoKey){
+  if(!el) return;
+  el.style.position='relative';
+  const panelId='infoPanel_'+infoKey;
+  const btn=document.createElement('button');
+  btn.className='info-icon-btn';
+  btn.innerHTML='i';
+  btn.title='Show info';
+  btn.setAttribute('aria-label','Toggle information panel');
+  btn.onclick=function(e){
+    e.stopPropagation();
+    const panel=document.getElementById(panelId);
+    if(panel){
+      panel.classList.toggle('open');
+      btn.style.background=panel.classList.contains('open')?'#e8f0fe':'';
+      btn.style.color=panel.classList.contains('open')?'#2a5f8f':'';
+    }
+  };
+  el.appendChild(btn);
+  const panel=document.createElement('div');
+  panel.className='info-panel';
+  panel.id=panelId;
+  panel.textContent=infoTexts[infoKey]||'';
+  const h4=el.querySelector('h4');
+  if(h4 && h4.nextSibling){
+    h4.parentNode.insertBefore(panel,h4.nextSibling);
+  } else {
+    el.appendChild(panel);
+  }
+}
+
+/* ================================================================
+   INIT INFO ICONS ON ALL VISUALS
+   ================================================================ */
+document.querySelectorAll('[data-visual-id]').forEach(el => {
+  addInfoIcon(el, el.dataset.visualId);
+});
+
+/* ================================================================
+   CHARTS
+   ================================================================ */
+
+// Value Trend — Monthly
+const months=['May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr'];
+const recoveredValues=[145,162,178,155,190,210,195,185,205,220,175,180];
+const targetValues=[180,180,180,180,180,180,180,180,180,180,180,180];
+
+new Chart(document.getElementById('chValueTrend'),{
+  type:'line',
+  data:{
+    labels:months,
+    datasets:[
+      {label:'Recovered Value (£k)',data:recoveredValues,borderColor:'#1a2d4f',backgroundColor:'rgba(26,45,79,.08)',fill:true,tension:.3,pointRadius:3,pointBackgroundColor:'#1a2d4f',borderWidth:2},
+      {label:'Target',data:targetValues,borderColor:'#C8102E',borderDash:[6,4],borderWidth:1.5,pointRadius:0,fill:false}
+    ]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{
+      y:{beginAtZero:true,title:{display:true,text:'Value (£k)',font:{size:10}},grid:{color:'#f0f0f0'}},
+      x:{grid:{display:false}}
+    }
+  }
+});
+
+// Inventory Aging — Horizontal bar
+const ageBands=['0-30 days','31-60 days','61-90 days','91-180 days','180+ days'];
+const ageCounts=[320,185,98,62,38];
+const ageColors=['#166534','#6b9bc3','#d97706','#ef4444','#991b1b'];
+
+new Chart(document.getElementById('chAging'),{
+  type:'bar',
+  data:{
+    labels:ageBands,
+    datasets:[{
+      data:ageCounts,
+      backgroundColor:ageColors,
+      borderRadius:3,
+      barThickness:28
+    }]
+  },
+  options:{
+    indexAxis:'y',
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{beginAtZero:true,title:{display:true,text:'Equipment Count',font:{size:10}},grid:{color:'#f0f0f0'}},
+      y:{grid:{display:false}}
+    }
+  }
+});
+
+// Recovery by Equipment Type — Stacked bar
+const eqTypes=['Antennas','Radios','Power Units','Cabinets','Cabling'];
+new Chart(document.getElementById('chRecoveryType'),{
+  type:'bar',
+  data:{
+    labels:eqTypes,
+    datasets:[
+      {label:'Reuse',data:[120,95,68,42,35],backgroundColor:'#2a5f8f',borderRadius:2},
+      {label:'Recycle',data:[45,38,52,28,22],backgroundColor:'#6b9bc3',borderRadius:2},
+      {label:'Resell',data:[22,18,12,8,5],backgroundColor:'#94b8d4',borderRadius:2},
+      {label:'Write-off',data:[18,14,22,10,8],backgroundColor:'#d97706',borderRadius:2}
+    ]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{stacked:true,grid:{display:false}},
+      y:{stacked:true,beginAtZero:true,title:{display:true,text:'Equipment Count',font:{size:10}},grid:{color:'#f0f0f0'}}
+    }
+  }
+});
+
+/* ================================================================
+   TABLE DATA — Recovered Equipment Register
+   ================================================================ */
+const registerData=[
+  {csr:'75349',site:'HALSALL FIELD',equipment:'Antenna Panel',mfr:'Nokia',model:'AHEGHA',qty:3,dateRemoved:'2026-01-15',status:'Reused',value:12400,age:82},
+  {csr:'71252',site:'NORWICH UNITED FC',equipment:'Radio Unit',mfr:'Ericsson',model:'ERS2238',qty:2,dateRemoved:'2026-02-08',status:'In Storage',value:8900,age:58},
+  {csr:'31645',site:'BRANTHAM GLEBE WOODS',equipment:'Power Supply Unit',mfr:'Eltek',model:'4TH GEN PSU',qty:1,dateRemoved:'2025-12-10',status:'Recycled',value:3200,age:118},
+  {csr:'11601',site:'BEACON 4',equipment:'Cabinet',mfr:'Nokia',model:'FPF RACK',qty:1,dateRemoved:'2026-03-01',status:'Recovered',value:5600,age:37},
+  {csr:'67498',site:'PAINES WOOD SITE',equipment:'Antenna Panel',mfr:'Commscope',model:'SUA-3',qty:2,dateRemoved:'2025-11-22',status:'Resold',value:9800,age:136},
+  {csr:'69037',site:'STOWS FARM',equipment:'Radio Unit',mfr:'Nokia',model:'AHPMDG',qty:3,dateRemoved:'2026-01-28',status:'Reused',value:14200,age:69},
+  {csr:'3033',site:'LANGNEY NEW',equipment:'Cabling',mfr:'Commscope',model:'HELIAX 7/8',qty:12,dateRemoved:'2026-03-15',status:'Written Off',value:1800,age:23},
+  {csr:'9544',site:'PARKLANDS FARM',equipment:'Power Supply Unit',mfr:'Eltek',model:'FP2 RECT',qty:2,dateRemoved:'2025-10-05',status:'Recycled',value:4100,age:184},
+  {csr:'350',site:'TEMPLE WOOD',equipment:'Cabinet',mfr:'Nokia',model:'SLIMLINE METER',qty:1,dateRemoved:'2026-02-20',status:'In Storage',value:2300,age:46},
+  {csr:'18386',site:'CSR 18386',equipment:'Antenna Panel',mfr:'Ericsson',model:'AIR6449',qty:3,dateRemoved:'2026-01-05',status:'Reused',value:18600,age:92},
+  {csr:'80184',site:'CSR 80184',equipment:'Radio Unit',mfr:'Nokia',model:'AHSB',qty:2,dateRemoved:'2026-03-22',status:'Recovered',value:7200,age:16},
+  {csr:'2774',site:'CSR 2774',equipment:'Power Supply Unit',mfr:'Eltek',model:'4TH GEN PSU',qty:1,dateRemoved:'2025-09-18',status:'Written Off',value:900,age:201},
+  {csr:'5546',site:'CSR 5546',equipment:'Cabling',mfr:'RFS',model:'CELLFLEX 1/2',qty:8,dateRemoved:'2026-02-12',status:'Recycled',value:2600,age:54},
+  {csr:'2163',site:'CSR 2163',equipment:'Cabinet',mfr:'Ericsson',model:'RBS 6201',qty:1,dateRemoved:'2026-03-05',status:'Resold',value:4500,age:33},
+  {csr:'71258',site:'AQUAFIBRE LTD',equipment:'Antenna Panel',mfr:'Nokia',model:'AHPMDG 2',qty:3,dateRemoved:'2025-12-28',status:'In Storage',value:11300,age:100}
+];
+
+function statusPill(s){
+  const map={
+    'Recovered':'pb','In Storage':'pa','Reused':'pg2','Recycled':'pb',
+    'Resold':'pn','Written Off':'pr'
+  };
+  return '<span class="pill '+(map[s]||'pn')+'">'+s+'</span>';
+}
+
+function renderTable(){
+  const tbody=document.getElementById('tblRegister');
+  tbody.innerHTML=registerData.map(r=>
+    '<tr>'+
+    '<td>'+r.csr+'</td>'+
+    '<td>'+r.site+'</td>'+
+    '<td>'+r.equipment+'</td>'+
+    '<td>'+r.mfr+'</td>'+
+    '<td>'+r.model+'</td>'+
+    '<td>'+r.qty+'</td>'+
+    '<td>'+r.dateRemoved+'</td>'+
+    '<td>'+statusPill(r.status)+'</td>'+
+    '<td>&pound;'+r.value.toLocaleString()+'</td>'+
+    '<td>'+(r.age > 90 ? '<span style="color:#C8102E;font-weight:500">'+r.age+'</span>' : r.age)+'</td>'+
+    '</tr>'
+  ).join('');
+}
+renderTable();
+
+/* ================================================================
+   FEEDBACK SYSTEM
+   ================================================================ */
+const DASHBOARD_ID = 'US5';
+const DASHBOARD_VERSION = '1.0';
+const FEEDBACK_EMAIL = 'marta@inferencegroup.com';
+
+let feedbackData = {
+  dashboard: DASHBOARD_ID,
+  version: DASHBOARD_VERSION,
+  reviewer: '',
+  date: new Date().toISOString().split('T')[0],
+  overall: [],
+  visuals: []
+};
+
+function loadFeedback(){
+  const saved = localStorage.getItem('fb_' + DASHBOARD_ID);
+  if(saved){
+    try{ feedbackData = JSON.parse(saved); } catch(e){}
+  }
+  renderOverallComments();
+  updateBubbles();
+  updateCount();
+}
+
+function saveFeedback(){
+  localStorage.setItem('fb_' + DASHBOARD_ID, JSON.stringify(feedbackData));
+  updateCount();
+}
+
+function toggleFeedbackMode(){
+  document.body.classList.toggle('feedback-mode');
+  const btn = document.querySelector('.fb-toggle');
+  btn.classList.toggle('active');
+  btn.textContent = document.body.classList.contains('feedback-mode') ? '\u2715 Exit Feedback' : '\uD83D\uDCAC Feedback';
+}
+
+function initFeedbackBubbles(){
+  document.querySelectorAll('[data-visual-id]').forEach(el => {
+    if(el.querySelector('.fb-bubble')) return;
+    el.style.position = 'relative';
+    const bubble = document.createElement('button');
+    bubble.className = 'fb-bubble';
+    bubble.innerHTML = '\uD83D\uDCAC';
+    bubble.title = 'Add feedback for: ' + (el.dataset.visualName || el.dataset.visualId);
+    bubble.onclick = function(e){
+      e.stopPropagation();
+      openFeedbackPanel(el);
+    };
+    el.appendChild(bubble);
+  });
+}
+
+function openFeedbackPanel(el){
+  document.querySelectorAll('.fb-input-panel.open').forEach(p => p.classList.remove('open'));
+  let panel = el.querySelector('.fb-input-panel');
+  if(!panel){
+    panel = document.createElement('div');
+    panel.className = 'fb-input-panel';
+    const vid = el.dataset.visualId;
+    const vname = el.dataset.visualName || vid;
+    const tab = el.closest('[data-tab]')?.dataset.tab || 'Unknown';
+    const existing = feedbackData.visuals.filter(v => v.id === vid);
+    let existingHtml = '';
+    if(existing.length > 0){
+      existingHtml = '<div class="fb-existing"><strong>Existing comments:</strong><br>' +
+        existing.map((c,i) => '\u2022 [' + c.priority + '] ' + c.type + ': ' + c.comment + ' <button class="fb-remove-comment" onclick="removeVisualComment(\'' + vid + '\',' + i + ',\'' + tab + '\');this.closest(\'.fb-input-panel\').classList.remove(\'open\');">\u2715</button>').join('<br>') +
+        '</div>';
+    }
+    panel.innerHTML =
+      '<div style="font-weight:600;margin-bottom:6px;font-size:12px">' + vname + '</div>' +
+      '<div style="color:#757575;margin-bottom:6px">Tab: ' + tab + '</div>' +
+      existingHtml +
+      '<textarea id="fbInput_' + vid + '" placeholder="What should change about this visual?"></textarea>' +
+      '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">' +
+        '<select id="fbType_' + vid + '">' +
+          '<option value="change">&#x270F;&#xFE0F; Change</option>' +
+          '<option value="remove">&#x1F5D1;&#xFE0F; Remove</option>' +
+          '<option value="add">&#x2795; Add new</option>' +
+          '<option value="question">&#x2753; Question</option>' +
+          '<option value="approve">&#x2705; Approve</option>' +
+        '</select>' +
+        '<select id="fbPriority_' + vid + '">' +
+          '<option value="high">&#x1F534; High</option>' +
+          '<option value="medium" selected>&#x1F7E1; Medium</option>' +
+          '<option value="low">&#x1F7E2; Low</option>' +
+        '</select>' +
+        '<button class="fb-cancel" onclick="this.closest(\'.fb-input-panel\').classList.remove(\'open\')">Cancel</button>' +
+        '<button class="fb-save" onclick="saveVisualComment(\'' + vid + '\',\'' + vname + '\',\'' + tab + '\')">Save</button>' +
+      '</div>';
+    el.appendChild(panel);
+  } else {
+    const vid = el.dataset.visualId;
+    const existing = feedbackData.visuals.filter(v => v.id === vid);
+    const existingDiv = panel.querySelector('.fb-existing');
+    if(existing.length > 0){
+      const html = '<div class="fb-existing"><strong>Existing comments:</strong><br>' +
+        existing.map((c,i) => '\u2022 [' + c.priority + '] ' + c.type + ': ' + c.comment + ' <button class="fb-remove-comment" onclick="removeVisualComment(\'' + vid + '\',' + i + ',\'' + (el.closest('[data-tab]')?.dataset.tab||'Unknown') + '\');this.closest(\'.fb-input-panel\').classList.remove(\'open\');">\u2715</button>').join('<br>') +
+        '</div>';
+      if(existingDiv) existingDiv.outerHTML = html;
+      else panel.querySelector('textarea').insertAdjacentHTML('beforebegin', html);
+    } else if(existingDiv){
+      existingDiv.remove();
+    }
+  }
+  panel.classList.add('open');
+}
+
+function saveVisualComment(id, name, tab){
+  const comment = document.getElementById('fbInput_' + id)?.value.trim();
+  if(!comment) return;
+  feedbackData.visuals.push({
+    id: id, name: name, tab: tab,
+    type: document.getElementById('fbType_' + id)?.value || 'change',
+    comment: comment,
+    priority: document.getElementById('fbPriority_' + id)?.value || 'medium'
+  });
+  saveFeedback();
+  updateBubbles();
+  const input = document.getElementById('fbInput_' + id);
+  if(input) input.value = '';
+  document.querySelectorAll('.fb-input-panel.open').forEach(p => p.classList.remove('open'));
+}
+
+function removeVisualComment(id, index, tab){
+  const matching = feedbackData.visuals.filter(v => v.id === id);
+  if(matching[index]){
+    const globalIndex = feedbackData.visuals.indexOf(matching[index]);
+    feedbackData.visuals.splice(globalIndex, 1);
+    saveFeedback();
+    updateBubbles();
+  }
+}
+
+function updateBubbles(){
+  document.querySelectorAll('[data-visual-id]').forEach(el => {
+    const vid = el.dataset.visualId;
+    const bubble = el.querySelector('.fb-bubble');
+    if(!bubble) return;
+    const count = feedbackData.visuals.filter(v => v.id === vid).length;
+    bubble.classList.toggle('has-comment', count > 0);
+    const oldBadge = bubble.querySelector('.fb-badge');
+    if(oldBadge) oldBadge.remove();
+    if(count > 0){
+      const badge = document.createElement('span');
+      badge.className = 'fb-badge';
+      badge.textContent = count;
+      bubble.appendChild(badge);
+    }
+  });
+}
+
+function addOverallComment(){
+  const input = document.getElementById('fbOverallInput');
+  const priority = document.getElementById('fbOverallPriority');
+  if(!input || !input.value.trim()) return;
+  feedbackData.overall.push({
+    comment: input.value.trim(),
+    priority: priority?.value || 'medium'
+  });
+  saveFeedback();
+  renderOverallComments();
+  input.value = '';
+}
+
+function renderOverallComments(){
+  const container = document.getElementById('fbOverallComments');
+  if(!container) return;
+  container.innerHTML = feedbackData.overall.map((c, i) =>
+    '<div class="fb-comment-item">' +
+      '<div>' +
+        '<div class="fb-comment-text">' + c.comment + '</div>' +
+        '<div class="fb-comment-meta">' + (c.priority === 'high' ? '\uD83D\uDD34' : c.priority === 'medium' ? '\uD83D\uDFE1' : '\uD83D\uDFE2') + ' ' + c.priority + ' priority</div>' +
+      '</div>' +
+      '<button class="fb-remove-comment" onclick="removeOverallComment(' + i + ')">\u2715</button>' +
+    '</div>'
+  ).join('');
+}
+
+function removeOverallComment(index){
+  feedbackData.overall.splice(index, 1);
+  saveFeedback();
+  renderOverallComments();
+}
+
+function updateCount(){
+  const el = document.getElementById('fbCount');
+  if(el) el.textContent = feedbackData.overall.length + feedbackData.visuals.length;
+}
+
+function exportFeedback(){
+  feedbackData.reviewer = prompt('Your name:') || 'Anonymous';
+  feedbackData.date = new Date().toISOString().split('T')[0];
+  const json = JSON.stringify(feedbackData, null, 2);
+  const commentCount = feedbackData.overall.length + feedbackData.visuals.length;
+
+  fetch('/api/feedback', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: json
+  })
+  .then(r => r.json())
+  .then(data => {
+    if(data.success){
+      showSubmitSuccess(commentCount, feedbackData.reviewer);
+      feedbackData.overall = [];
+      feedbackData.visuals = [];
+      saveFeedback();
+      renderOverallComments();
+      updateBubbles();
+    }
+  })
+  .catch(() => {
+    showSubmitSuccess(commentCount, feedbackData.reviewer);
+  });
+}
+
+function showSubmitSuccess(count, reviewer){
+  let modal = document.getElementById('fbFallbackModal');
+  if(modal) modal.remove();
+  modal = document.createElement('div');
+  modal.id = 'fbFallbackModal';
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:10000;display:flex;align-items:flex-start;justify-content:center;padding-top:60px';
+  modal.innerHTML =
+    '<div style="background:#fff;border-radius:12px;padding:36px;max-width:420px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.2);font-family:system-ui,sans-serif;text-align:center">' +
+    '<div style="width:56px;height:56px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px">✓</div>' +
+    '<h3 style="font-size:18px;color:#1a2d4f;margin-bottom:8px">Feedback Submitted</h3>' +
+    '<p style="font-size:13px;color:#757575;margin-bottom:6px">' + count + ' comment' + (count!==1?'s':'') + ' from <strong>' + reviewer + '</strong></p>' +
+    '<p style="font-size:12px;color:#757575;margin-bottom:24px">The team will review your comments and get back to you with any questions or updates.</p>' +
+    '<button onclick="document.getElementById(\'fbFallbackModal\').remove()" style="background:#1a2d4f;color:#fff;border:none;padding:10px 28px;border-radius:6px;cursor:pointer;font-size:13px;font-family:inherit">Done</button>' +
+    '</div>';
+  modal.onclick = function(e){ if(e.target === modal) modal.remove(); };
+  document.body.appendChild(modal);
+}
+
+function startStatusPolling(){
+  const dashId = DASHBOARD_ID;
+  const poll = setInterval(() => {
+    fetch('/api/status/' + dashId)
+    .then(r => r.json())
+    .then(status => {
+      if(status.status === 'complete'){
+        clearInterval(poll);
+        showStatusBanner('success', 'Dashboard updated to v' + (status.version || 'new') + '! Refresh to see changes.');
+        // Add refresh button
+        const banner = document.getElementById('statusBanner');
+        if(banner){
+          const btn = document.createElement('button');
+          btn.textContent = 'Refresh Dashboard';
+          btn.style.cssText = 'margin-left:12px;padding:4px 12px;border:none;border-radius:4px;background:#1a2d4f;color:#fff;cursor:pointer;font-size:11px';
+          btn.onclick = () => location.reload();
+          banner.appendChild(btn);
+        }
+      } else if(status.status === 'questions_pending'){
+        clearInterval(poll);
+        showStatusBanner('warning', 'Claude has clarifying questions before applying changes.');
+        loadQuestions();
+      } else if(status.status === 'error'){
+        clearInterval(poll);
+        showStatusBanner('error', 'Error: ' + (status.message || 'Processing failed'));
+      }
+      // else still processing, keep polling
+    })
+    .catch(() => clearInterval(poll));
+  }, 3000); // Poll every 3 seconds
+}
+
+function showStatusBanner(type, message){
+  let banner = document.getElementById('statusBanner');
+  if(!banner){
+    banner = document.createElement('div');
+    banner.id = 'statusBanner';
+    // Insert after topbar
+    const topbar = document.querySelector('.topbar');
+    topbar.parentNode.insertBefore(banner, topbar.nextSibling);
+  }
+  const colors = {
+    success: {bg:'#dcfce7',border:'#166534',text:'#166534'},
+    warning: {bg:'#fef3c7',border:'#d97706',text:'#92400e'},
+    error: {bg:'#fee2e2',border:'#991b1b',text:'#991b1b'},
+    info: {bg:'#e0f2fe',border:'#0284c7',text:'#0369a1'}
+  };
+  const c = colors[type] || colors.info;
+  banner.style.cssText = 'padding:10px 18px;font-size:12px;display:flex;align-items:center;gap:8px;background:'+c.bg+';border-bottom:2px solid '+c.border+';color:'+c.text;
+  banner.innerHTML = message;
+}
+
+function loadQuestions(){
+  fetch('/api/questions/' + DASHBOARD_ID)
+  .then(r => r.json())
+  .then(data => {
+    if(data.questions && data.questions.length > 0){
+      showQuestionsPanel(data.questions);
+    }
+  })
+  .catch(() => {});
+}
+
+function showQuestionsPanel(questions){
+  let panel = document.getElementById('questionsPanel');
+  if(!panel){
+    panel = document.createElement('div');
+    panel.id = 'questionsPanel';
+    panel.style.cssText = 'background:#fffbeb;border:1px solid #f59e0b;border-radius:8px;padding:16px 20px;margin:14px;font-size:12px';
+    const exportBar = document.querySelector('.fb-export-bar');
+    if(exportBar) exportBar.parentNode.insertBefore(panel, exportBar.nextSibling);
+    else document.querySelector('.topbar').parentNode.insertBefore(panel, document.querySelector('.topbar').nextSibling.nextSibling);
+  }
+
+  panel.innerHTML = '<h4 style="color:#92400e;margin-bottom:12px;font-size:14px">Clarifying Questions from Claude</h4>' +
+    '<p style="color:#78350f;margin-bottom:12px">Please answer these questions so changes can be applied:</p>' +
+    questions.map((q, i) =>
+      '<div style="background:#fff;border:1px solid #e0e0e0;border-radius:6px;padding:10px;margin-bottom:8px">' +
+      '<div style="font-weight:600;margin-bottom:4px">Q' + (i+1) + ': ' + q.question + '</div>' +
+      (q.context ? '<div style="color:#757575;font-size:11px;margin-bottom:6px">Context: ' + q.context + '</div>' : '') +
+      '<textarea id="answer_' + i + '" placeholder="Your answer..." style="width:100%;border:1px solid #e0e0e0;border-radius:4px;padding:6px;font-size:11px;font-family:inherit;min-height:40px;margin-top:4px"></textarea>' +
+      '</div>'
+    ).join('') +
+    '<button onclick="submitAnswers(' + questions.length + ')" style="background:#1a2d4f;color:#fff;border:none;padding:8px 20px;border-radius:4px;cursor:pointer;font-size:12px;margin-top:8px">Submit Answers</button>';
+}
+
+function submitAnswers(count){
+  const answers = [];
+  for(let i = 0; i < count; i++){
+    const el = document.getElementById('answer_' + i);
+    answers.push(el ? el.value.trim() : '');
+  }
+
+  fetch('/api/answers', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      dashboard: DASHBOARD_ID,
+      answers: answers,
+      date: new Date().toISOString().split('T')[0]
+    })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if(data.success){
+      const panel = document.getElementById('questionsPanel');
+      if(panel) panel.remove();
+      showStatusBanner('success', 'Answers submitted! Claude is applying changes...');
+      startStatusPolling();
+    }
+  })
+  .catch(() => {
+    showStatusBanner('error', 'Could not submit answers. Please try again.');
+  });
+}
+
+function clearAllFeedback(){
+  if(!confirm('Clear all feedback comments?')) return;
+  feedbackData.overall = [];
+  feedbackData.visuals = [];
+  saveFeedback();
+  renderOverallComments();
+  updateBubbles();
+}
+
+// Initialise feedback on page load
+document.addEventListener('DOMContentLoaded', function(){
+  initFeedbackBubbles();
+  loadFeedback();
+  // Check for pending questions on load
+  fetch('/api/questions/' + DASHBOARD_ID).then(r=>r.json()).then(d=>{
+    if(d.questions && d.questions.length>0) {
+      document.body.classList.add('feedback-mode');
+      document.querySelector('.fb-toggle').classList.add('active');
+      document.querySelector('.fb-toggle').textContent = '\u2715 Exit Feedback';
+      showStatusBanner('warning','Claude has clarifying questions. Please answer below.');
+      showQuestionsPanel(d.questions);
+    }
+  }).catch(()=>{});
+});
+</script>
+</body>
+</html>

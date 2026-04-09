@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>US8 — Transmission Planning v1.0</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root{--font-sans:system-ui,-apple-system,sans-serif;--color-background-primary:#ffffff;--color-background-secondary:#f8f9fa;--color-background-tertiary:#f1f3f4;--color-text-primary:#212121;--color-text-secondary:#757575;--color-border-tertiary:#e0e0e0;--border-radius-lg:8px;--border-radius-md:6px}
+*{box-sizing:border-box;margin:0;padding:0}
+.dw{font-family:var(--font-sans);background:var(--color-background-tertiary)}
+.topbar{background:#1a2d4f;padding:10px 18px;display:flex;align-items:center;justify-content:space-between;border-radius:var(--border-radius-lg) var(--border-radius-lg) 0 0}
+.topbar-title{color:#fff;font-size:14px;font-weight:500}
+.topbar-sub{color:rgba(255,255,255,.5);font-size:11px;margin-top:2px}
+.topbar-right{color:rgba(255,255,255,.45);font-size:11px}
+.tabs{display:flex;background:var(--color-background-primary);border-bottom:1.5px solid var(--color-border-tertiary);padding:0 16px}
+.tab{padding:9px 16px;font-size:12px;color:var(--color-text-secondary);cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-1.5px;white-space:nowrap}
+.tab.on{color:#1a2d4f;font-weight:500;border-bottom-color:#C8102E}
+.tab:hover:not(.on){background:var(--color-background-secondary)}
+.pg{display:none;padding:14px;background:var(--color-background-secondary)}
+.pg.on{display:block}
+.fb{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--color-background-primary);padding:9px 12px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);margin-bottom:12px}
+.fb select,.fb input[type=text]{font-size:12px;padding:3px 7px;border-radius:4px;border:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary);color:var(--color-text-primary);height:26px}
+.fl{font-size:11px;color:var(--color-text-secondary)}
+.krow{display:grid;gap:10px;margin-bottom:12px}
+.k5{grid-template-columns:repeat(5,minmax(0,1fr))}
+.k4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.k3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.k2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.kpi{background:var(--color-background-primary);border-radius:var(--border-radius-md);padding:11px 13px;border:0.5px solid var(--color-border-tertiary);position:relative}
+.kpi-lbl{font-size:11px;color:var(--color-text-secondary);line-height:1.3;margin-bottom:3px}
+.kpi-val{font-size:24px;font-weight:500;color:var(--color-text-primary);line-height:1}
+.kpi-sub{font-size:10px;margin-top:3px;color:var(--color-text-secondary)}
+.kpi.red .kpi-val{color:#C8102E}
+.kpi.amb .kpi-val{color:#d97706}
+.kpi.grn .kpi-val{color:#166534}
+.kpi.clickable{cursor:pointer;transition:box-shadow .2s,border-color .2s}
+.kpi.clickable:hover{box-shadow:0 2px 8px rgba(0,0,0,.1);border-color:#2a5f8f}
+.cg2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.cg3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.cc{background:var(--color-background-primary);border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);padding:12px;margin-bottom:0;overflow:hidden;position:relative}
+.cc h4{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-secondary);margin-bottom:10px}
+.leg{display:flex;gap:12px;flex-wrap:wrap;font-size:10px;color:var(--color-text-secondary);margin-top:8px}
+.li{display:flex;align-items:center;gap:4px}
+.lsq{width:9px;height:9px;border-radius:2px}
+.lc{width:9px;height:9px;border-radius:50%}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{font-size:10px;font-weight:500;color:var(--color-text-secondary);padding:6px 8px;text-align:left;border-bottom:1px solid var(--color-border-tertiary);background:var(--color-background-secondary);white-space:nowrap}
+td{padding:6px 8px;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-primary);vertical-align:middle}
+tr:hover td{background:var(--color-background-tertiary)}
+tr:last-child td{border-bottom:none}
+.pill{display:inline-block;padding:1px 7px;border-radius:20px;font-size:10px;font-weight:500;white-space:nowrap}
+.pr{background:#fee2e2;color:#991b1b}
+.pa{background:#fef3c7;color:#92400e}
+.pg2{background:#dcfce7;color:#166534}
+.pb{background:#dbeafe;color:#1e40af}
+.pn{background:var(--color-background-tertiary);color:var(--color-text-secondary)}
+.rag-dot{width:11px;height:11px;border-radius:50%;display:inline-block;vertical-align:middle;flex-shrink:0}
+.map-wrap{position:relative;width:100%;height:340px;border-radius:6px;overflow:hidden}
+.placeholder-msg{text-align:center;padding:60px 20px;color:var(--color-text-secondary);font-size:13px}
+.act-btn{font-size:10px;padding:2px 8px;border:0.5px solid var(--color-border-tertiary);border-radius:3px;background:var(--color-background-secondary);color:var(--color-text-primary);cursor:pointer;margin-right:3px}
+.act-btn:hover{background:var(--color-background-tertiary)}
+.illustrative-banner{background:#fef3c7;border:1px solid #f59e0b;border-radius:4px;padding:5px 10px;font-size:10px;color:#92400e;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.info-icon-btn{position:absolute;top:8px;right:8px;width:18px;height:18px;border-radius:50%;border:1px solid #bbb;background:var(--color-background-secondary);color:#999;font-size:11px;line-height:16px;text-align:center;cursor:pointer;z-index:5;font-family:serif;font-weight:600;transition:background .2s,color .2s,border-color .2s}
+.info-icon-btn:hover{background:#e8f0fe;color:#2a5f8f;border-color:#2a5f8f}
+.info-panel{display:none;position:relative;background:#f0f4fa;border:1px solid #d0daea;border-radius:4px;padding:8px 10px;margin-top:8px;font-size:10px;line-height:1.5;color:#333;z-index:4;animation:infoFadeIn .2s ease}
+.info-panel.open{display:block}
+@keyframes infoFadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.fb-toggle{background:#C8102E;border:1px solid #C8102E;color:#fff;font-size:12px;padding:6px 16px;border-radius:4px;cursor:pointer;font-family:var(--font-sans);transition:all .2s;font-weight:600}
+.fb-toggle:hover{background:#a00d24;border-color:#a00d24;color:#fff}
+.fb-toggle.active{background:#d97706;border-color:#d97706;color:#fff;font-weight:600}
+.fb-bubble{display:none;position:absolute;top:6px;right:28px;width:20px;height:20px;border-radius:50%;background:#d97706;color:#fff;font-size:12px;border:none;cursor:pointer;align-items:center;justify-content:center;z-index:1000;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .15s}
+.fb-bubble:hover{transform:scale(1.15)}
+.fb-bubble.has-comment{background:#C8102E}
+body.feedback-mode .fb-bubble{display:flex}
+.fb-badge{position:absolute;top:-4px;right:-4px;width:14px;height:14px;border-radius:50%;background:#C8102E;color:#fff;font-size:8px;display:flex;align-items:center;justify-content:center;font-weight:700}
+.fb-input-panel{display:none;position:absolute;top:32px;right:6px;width:320px;max-height:400px;overflow-y:auto;background:#fff;border:1px solid #e0e0e0;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.15);z-index:1001;padding:10px;font-size:11px}
+.fb-input-panel.open{display:block}
+.fb-input-panel textarea{width:100%;border:1px solid #e0e0e0;border-radius:4px;padding:6px 8px;font-size:11px;font-family:var(--font-sans);resize:vertical;min-height:60px;margin-bottom:6px}
+.fb-input-panel select{font-size:11px;padding:3px 6px;border:1px solid #e0e0e0;border-radius:4px;margin-right:6px}
+.fb-input-panel button{font-size:11px;padding:3px 10px;border-radius:4px;border:none;cursor:pointer;font-family:var(--font-sans)}
+.fb-input-panel .fb-save{background:#1a2d4f;color:#fff}
+.fb-input-panel .fb-save:hover{background:#2a4060}
+.fb-input-panel .fb-cancel{background:#f1f3f4;color:#333;margin-right:6px}
+.fb-input-panel .fb-delete{background:#fee2e2;color:#991b1b;margin-left:auto}
+.fb-overall{display:none;background:#fffbeb;border:1px solid #f59e0b;border-radius:6px;padding:12px 16px;margin:0 14px 12px 14px}
+body.feedback-mode .fb-overall{display:block}
+.fb-overall h4{font-size:12px;color:#92400e;margin-bottom:8px}
+.fb-overall textarea{width:100%;border:1px solid #e0e0e0;border-radius:4px;padding:6px 8px;font-size:11px;font-family:var(--font-sans);resize:vertical;min-height:50px;margin-bottom:6px}
+.fb-overall .fb-comment-list{margin-top:8px}
+.fb-overall .fb-comment-item{background:#fff;border:1px solid #e0e0e0;border-radius:4px;padding:6px 8px;margin-bottom:4px;font-size:11px;display:flex;justify-content:space-between;align-items:start}
+.fb-overall .fb-comment-text{flex:1;margin-right:8px}
+.fb-overall .fb-comment-meta{font-size:9px;color:#757575;margin-top:2px}
+.fb-overall .fb-remove-comment{background:none;border:none;color:#991b1b;cursor:pointer;font-size:13px;padding:0 2px}
+.fb-export-bar{display:none;background:#1a2d4f;padding:8px 16px;align-items:center;justify-content:space-between}
+body.feedback-mode .fb-export-bar{display:flex}
+.fb-export-bar span{color:rgba(255,255,255,.7);font-size:11px}
+.fb-export-bar .fb-count{color:#f59e0b;font-weight:600}
+.fb-export-bar button{font-size:11px;padding:4px 14px;border-radius:4px;border:none;cursor:pointer;font-family:var(--font-sans)}
+.fb-export-btn{background:#f59e0b;color:#000;font-weight:500}
+.fb-export-btn:hover{background:#d97706}
+.fb-clear-btn{background:rgba(255,255,255,.1);color:rgba(255,255,255,.7);margin-left:8px}
+.fb-clear-btn:hover{background:rgba(255,255,255,.2);color:#fff}
+.version-badge{background:rgba(255,255,255,.1);color:rgba(255,255,255,.5);font-size:10px;padding:2px 8px;border-radius:3px;margin-left:10px}
+.fb-existing{background:#fef3c7;border:1px solid #fde68a;border-radius:4px;padding:6px 8px;margin-top:6px;font-size:10px;color:#92400e;line-height:1.4}
+.fb-existing strong{color:#78350f}
+.future-banner{background:#fef3c7;border:1px solid #f59e0b;border-radius:0;padding:8px 18px;font-size:11px;color:#92400e;display:flex;align-items:flex-start;gap:8px;line-height:1.5}
+.future-banner strong{color:#78350f}
+.expand-btn{background:none;border:none;cursor:pointer;font-size:12px;color:#2a5f8f;padding:0 4px}
+.expand-btn:hover{color:#1a2d4f}
+.detail-row{display:none}
+.detail-row.open{display:table-row}
+.detail-row td{background:#f8f9fa;padding:8px 16px;font-size:10px;color:var(--color-text-secondary)}
+</style>
+</head>
+<body>
+<div class="dw">
+<div class="topbar">
+  <div><div class="topbar-title">Transmission Planning — Dish Rights & Feasibility Dashboard</div><div class="topbar-sub">VMO2 · Network Design & Build · Q1 2026</div></div>
+  <div class="topbar-right">Updated daily · Last refresh 08 Apr 2026 09:15<button class="fb-toggle" onclick="toggleFeedbackMode()">&#x1F4AC; Feedback</button><span class="version-badge">v1.0</span></div>
+</div>
+
+<div class="future-banner">
+  <span>&#x26A0;&#xFE0F;</span>
+  <div><strong>FUTURE-STATE PROTOTYPE — NO LIVE DATA</strong><br>Prerequisites: Dynamo, SiteFlo, Microwave tracker integration. Future: Line-of-sight GIS data</div>
+</div>
+
+<div class="tabs">
+  <div class="tab on" onclick="sw(0)">Dish Rights & Capacity</div>
+  <div class="tab" onclick="sw(1)">Feasibility Analysis</div>
+</div>
+<div class="fb-export-bar">
+  <span>Feedback Mode — <span class="fb-count" id="fbCount">0</span> comments</span>
+  <div>
+    <button class="fb-export-btn" onclick="exportFeedback()">Submit Feedback</button>
+    <button class="fb-clear-btn" onclick="clearAllFeedback()">Clear All</button>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- TAB 1: Dish Rights & Capacity                                 -->
+<!-- ============================================================ -->
+<div class="pg on" id="pg0" data-tab="Dish Rights & Capacity">
+<div class="fb-overall" id="fbOverall">
+  <h4>Overall Dashboard Feedback</h4>
+  <div style="display:flex;gap:6px;align-items:end">
+    <div style="flex:1">
+      <textarea id="fbOverallInput" placeholder="Add overall feedback about this dashboard..."></textarea>
+      <div style="display:flex;align-items:center;gap:6px">
+        <select id="fbOverallPriority">
+          <option value="high">&#x1F534; High</option>
+          <option value="medium" selected>&#x1F7E1; Medium</option>
+          <option value="low">&#x1F7E2; Low</option>
+        </select>
+        <button class="fb-save" onclick="addOverallComment()">Add Comment</button>
+      </div>
+    </div>
+  </div>
+  <div class="fb-comment-list" id="fbOverallComments"></div>
+</div>
+
+  <!-- Filters -->
+  <div class="fb">
+    <span class="fl">Region</span><select><option>All</option><option>North</option><option>South</option><option>Midlands</option><option>Scotland & NI</option></select>
+    <span class="fl">Site</span><input type="text" placeholder="Search site...">
+    <span class="fl">Transmission Type</span><select><option>All</option><option>Microwave</option><option>Fibre</option></select>
+    <span class="fl">Availability</span><select><option>All</option><option>Vacant</option><option>Occupied</option></select>
+    <span class="fl">Date Range</span><input type="text" placeholder="From" style="width:80px"> <input type="text" placeholder="To" style="width:80px">
+  </div>
+
+  <!-- KPI Row: 5 cards -->
+  <div class="krow k5">
+    <div class="kpi" id="kpiTotalSites" data-visual-id="kpi-total-sites" data-visual-name="Total Sites with Dish Rights">
+      <div class="kpi-lbl">Total Sites with Dish Rights</div>
+      <div class="kpi-val">1,284</div>
+      <div class="kpi-sub">sites with allocated microwave dish rights</div>
+    </div>
+    <div class="kpi grn" id="kpiVacant" data-visual-id="kpi-vacant-rights" data-visual-name="Vacant Dish Rights">
+      <div class="kpi-lbl">Vacant Dish Rights</div>
+      <div class="kpi-val">347</div>
+      <div class="kpi-sub">available slots for new child sites</div>
+    </div>
+    <div class="kpi" id="kpiUtilisation" data-visual-id="kpi-utilisation" data-visual-name="Dish Utilisation">
+      <div class="kpi-lbl">Dish Utilisation</div>
+      <div class="kpi-val">73%</div>
+      <div class="kpi-sub">of allocated rights currently active</div>
+    </div>
+    <div class="kpi" id="kpiAvgCapacity" data-visual-id="kpi-avg-capacity" data-visual-name="Avg Available Capacity">
+      <div class="kpi-lbl">Avg Available Capacity</div>
+      <div class="kpi-val">1.4</div>
+      <div class="kpi-sub">mean available dish positions per site</div>
+    </div>
+    <div class="kpi red" id="kpiConflicts" data-visual-id="kpi-conflicts" data-visual-name="Conflicting Rights">
+      <div class="kpi-lbl">Conflicting Rights</div>
+      <div class="kpi-val">12</div>
+      <div class="kpi-sub">sites with overlapping assignments</div>
+    </div>
+  </div>
+
+  <!-- Charts Row 1: Capacity by Region + Utilisation Trend -->
+  <div class="cg2">
+    <div class="cc" id="cardCapacityRegion" data-visual-id="chart-capacity-region" data-visual-name="Capacity by Region">
+      <h4>Capacity by Region</h4>
+      <div style="position:relative;height:260px;overflow:hidden"><canvas id="chCapacityRegion"></canvas></div>
+      <div class="leg">
+        <div class="li"><div class="lsq" style="background:#1a2d4f"></div> Total Rights</div>
+        <div class="li"><div class="lsq" style="background:#2a5f8f"></div> In Use</div>
+        <div class="li"><div class="lsq" style="background:#166534"></div> Vacant</div>
+      </div>
+    </div>
+    <div class="cc" id="cardUtilTrend" data-visual-id="chart-util-trend" data-visual-name="Dish Utilisation Trend">
+      <h4>Dish Utilisation Trend</h4>
+      <div style="position:relative;height:260px;overflow:hidden"><canvas id="chUtilTrend"></canvas></div>
+      <div class="leg">
+        <div class="li"><div class="lsq" style="background:#2a5f8f"></div> Utilisation %</div>
+        <div class="li"><div class="lsq" style="background:#C8102E;opacity:.4"></div> 80% Target</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Map Section -->
+  <div class="cc" id="cardSiteMap" data-visual-id="map-dish-rights" data-visual-name="Site Map — Dish Right Availability" style="margin-bottom:12px">
+    <h4>Site Map — Dish Right Availability</h4>
+    <div class="map-wrap" id="mapWrap1"></div>
+    <div class="leg" style="margin-top:6px">
+      <div class="li"><div class="lc" style="background:#166534"></div> Vacant rights available</div>
+      <div class="li"><div class="lc" style="background:#d97706"></div> 1 slot remaining</div>
+      <div class="li"><div class="lc" style="background:#C8102E"></div> Fully utilised</div>
+    </div>
+  </div>
+
+  <!-- Table: Dish Rights Register -->
+  <div class="cc" id="cardDishTable" data-visual-id="table-dish-rights" data-visual-name="Dish Rights Register">
+    <h4>Dish Rights Register — click row to expand detail</h4>
+    <div style="overflow-x:auto">
+      <table id="tblDish">
+        <thead><tr><th>CSR</th><th>Site Name</th><th>Region</th><th>Total Rights</th><th>In Use</th><th>Vacant</th><th>Transmission Type</th><th>Status</th><th>Last Updated</th><th></th></tr></thead>
+        <tbody id="tblDishBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- TAB 2: Feasibility Analysis                                   -->
+<!-- ============================================================ -->
+<div class="pg" id="pg1" data-tab="Feasibility Analysis">
+
+  <!-- KPI Row: 4 cards -->
+  <div class="krow k4">
+    <div class="kpi" id="kpiAssessed" data-visual-id="kpi-sites-assessed" data-visual-name="Sites Assessed">
+      <div class="kpi-lbl">Sites Assessed</div>
+      <div class="kpi-val">186</div>
+      <div class="kpi-sub">feasibility assessments completed</div>
+    </div>
+    <div class="kpi grn" id="kpiHighFeas" data-visual-id="kpi-high-feasibility" data-visual-name="High Feasibility">
+      <div class="kpi-lbl">High Feasibility</div>
+      <div class="kpi-val">62</div>
+      <div class="kpi-sub">sites scoring &gt;80%</div>
+    </div>
+    <div class="kpi" id="kpiBTFibre" data-visual-id="kpi-bt-fibre" data-visual-name="BT Fibre Sites">
+      <div class="kpi-lbl">BT Fibre Sites</div>
+      <div class="kpi-val">94</div>
+      <div class="kpi-sub">sites currently on BT fibre</div>
+    </div>
+    <div class="kpi grn" id="kpiSavings" data-visual-id="kpi-potential-savings" data-visual-name="Potential Savings">
+      <div class="kpi-lbl">Potential Savings</div>
+      <div class="kpi-val">&pound;1.2M</div>
+      <div class="kpi-sub">estimated from fibre-to-microwave conversion</div>
+    </div>
+  </div>
+
+  <!-- Charts Row 1 -->
+  <div class="cg2">
+    <div class="cc" id="cardFeasDist" data-visual-id="chart-feas-distribution" data-visual-name="Feasibility Scoring Distribution">
+      <h4>Feasibility Scoring Distribution</h4>
+      <div style="position:relative;height:260px;overflow:hidden"><canvas id="chFeasDist"></canvas></div>
+    </div>
+    <div class="cc" id="cardCostComp" data-visual-id="chart-cost-comparison" data-visual-name="Cost Comparison: Fibre vs Microwave">
+      <h4>Cost Comparison: Fibre vs Microwave</h4>
+      <div style="position:relative;height:260px;overflow:hidden"><canvas id="chCostComp"></canvas></div>
+      <div class="leg">
+        <div class="li"><div class="lsq" style="background:#C8102E"></div> BT Fibre Cost</div>
+        <div class="li"><div class="lsq" style="background:#166534"></div> Microwave Cost</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table: Feasibility Ranking -->
+  <div class="cc" id="cardFeasTable" data-visual-id="table-feasibility" data-visual-name="Feasibility Ranking">
+    <h4>Feasibility Ranking — sorted by feasibility score descending</h4>
+    <div style="overflow-x:auto">
+      <table id="tblFeas">
+        <thead><tr><th>CSR</th><th>Site Name</th><th>Region</th><th>Feasibility Score</th><th>Current Transmission</th><th>Recommended</th><th>Annual Cost (Current)</th><th>Annual Cost (Recommended)</th><th>Saving (&pound;)</th><th>Status</th></tr></thead>
+        <tbody id="tblFeasBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+Chart.defaults.font.family='system-ui,-apple-system,sans-serif';
+Chart.defaults.font.size=10;
+Chart.defaults.color='#757575';
+
+const DASHBOARD_ID='US8';
+const DASHBOARD_VERSION='1.0';
+const FEEDBACK_EMAIL='marta@inferencegroup.com';
+
+/* ================================================================
+   INFO TEXTS
+   ================================================================ */
+const infoTexts={
+  'kpi-total-sites':'Sites with allocated microwave dish rights. Drives: portfolio visibility for transmission planning',
+  'kpi-vacant-rights':'Unassigned dish rights available for new child sites. Drives: identifying capacity for new deployments',
+  'kpi-utilisation':'Percentage of allocated dish rights currently active. Drives: capacity planning and right reallocation',
+  'kpi-avg-capacity':'Mean available dish positions per site. Drives: identifying sites with room for additional links',
+  'kpi-conflicts':'Sites where dish rights have overlapping or conflicting assignments. Drives: conflict resolution prioritisation',
+  'chart-capacity-region':'Regional breakdown of dish right capacity. Drives: identifying which regions have capacity for child site deployment',
+  'chart-util-trend':'Tracks how dish utilisation is changing over time. Drives: capacity planning decisions',
+  'map-dish-rights':'Geographic view of dish right availability. Drives: spatial planning for parent-child site pairing',
+  'table-dish-rights':'Complete inventory of dish rights per site. Drives: site-level transmission planning without manual GA/DD review',
+  'kpi-sites-assessed':'Sites evaluated for child site deployment. Drives: assessment pipeline tracking',
+  'kpi-high-feasibility':'Sites highly suitable for child deployment. Drives: prioritised rollout planning',
+  'kpi-bt-fibre':'Sites currently on BT fibre that could potentially convert to VMO2 fibre/microwave. Drives: cost optimisation analysis',
+  'kpi-potential-savings':'Estimated savings from converting suitable BT fibre sites to microwave. Drives: business case for conversion programme',
+  'chart-feas-distribution':'Distribution of feasibility scores across assessed sites. Drives: identifying proportion of portfolio suitable for deployment',
+  'chart-cost-comparison':'Side-by-side cost comparison per site. Drives: site-level decision on transmission method',
+  'table-feasibility':'Ranked list of sites by deployment feasibility. Drives: prioritised site selection for child deployment'
+};
+
+/* ================================================================
+   INFO ICON HELPERS
+   ================================================================ */
+function addInfoIcon(containerId, infoKey){
+  const container=document.getElementById(containerId);
+  if(!container) return;
+  const panelId='infoPanel_'+infoKey;
+  const btn=document.createElement('button');
+  btn.className='info-icon-btn';
+  btn.innerHTML='i';
+  btn.title='Show info';
+  btn.setAttribute('aria-label','Toggle information panel');
+  btn.onclick=function(e){
+    e.stopPropagation();
+    const panel=document.getElementById(panelId);
+    if(panel){
+      panel.classList.toggle('open');
+      btn.style.background=panel.classList.contains('open')?'#e8f0fe':'';
+      btn.style.color=panel.classList.contains('open')?'#2a5f8f':'';
+    }
+  };
+  container.appendChild(btn);
+  const panel=document.createElement('div');
+  panel.className='info-panel';
+  panel.id=panelId;
+  panel.textContent=infoTexts[infoKey]||'';
+  const h4=container.querySelector('h4');
+  if(h4 && h4.nextSibling){
+    h4.parentNode.insertBefore(panel,h4.nextSibling);
+  } else {
+    container.appendChild(panel);
+  }
+}
+
+function addInfoIconToEl(el, infoKey){
+  if(!el) return;
+  el.style.position='relative';
+  const panelId='infoPanel_'+infoKey;
+  const btn=document.createElement('button');
+  btn.className='info-icon-btn';
+  btn.innerHTML='i';
+  btn.title='Show info';
+  btn.onclick=function(e){
+    e.stopPropagation();
+    const panel=document.getElementById(panelId);
+    if(panel){
+      panel.classList.toggle('open');
+      btn.style.background=panel.classList.contains('open')?'#e8f0fe':'';
+      btn.style.color=panel.classList.contains('open')?'#2a5f8f':'';
+    }
+  };
+  el.appendChild(btn);
+  const panel=document.createElement('div');
+  panel.className='info-panel';
+  panel.id=panelId;
+  panel.textContent=infoTexts[infoKey]||'';
+  el.appendChild(panel);
+}
+
+/* ================================================================
+   MOCK DATA — Dish Rights Register (20 rows)
+   ================================================================ */
+const dishSites=[
+  {csr:'CSR-1001',name:'Canary Wharf Tower',region:'South',total:6,inUse:4,vacant:2,type:'Microwave',status:'Active',updated:'2026-04-01',lat:51.5049,lng:-0.0197,detail:'Rights allocated 2019. 2 MW links to Docklands Hub, 2 to Greenwich relay. 2 vacant positions facing NW and SE.'},
+  {csr:'CSR-1002',name:'Crystal Palace',region:'South',total:8,inUse:8,vacant:0,type:'Microwave',status:'Active',updated:'2026-03-28',lat:51.4225,lng:-0.0720,detail:'Fully utilised. All 8 positions occupied with MW links to surrounding child sites. No expansion capacity.'},
+  {csr:'CSR-1003',name:'Stokenchurch BT',region:'South',total:4,inUse:3,vacant:1,type:'Microwave',status:'Active',updated:'2026-04-03',lat:51.6605,lng:-0.8940,detail:'3 active MW links. 1 vacant position facing N. Potential for Aylesbury child link.'},
+  {csr:'CSR-1004',name:'Sutton Coldfield',region:'Midlands',total:6,inUse:5,vacant:1,type:'Microwave',status:'Active',updated:'2026-03-30',lat:52.5631,lng:-1.8244,detail:'Major hub for Midlands. 5 active links. 1 position reserved but currently vacant.'},
+  {csr:'CSR-1005',name:'Emley Moor',region:'North',total:10,inUse:7,vacant:3,type:'Microwave',status:'Active',updated:'2026-04-02',lat:53.6129,lng:-1.6663,detail:'Primary Northern hub. 7 active MW links, 3 vacant positions available. High elevation advantage.'},
+  {csr:'CSR-1006',name:'Belmont Mast',region:'North',total:5,inUse:3,vacant:2,type:'Microwave',status:'Active',updated:'2026-03-25',lat:53.3352,lng:-0.0128,detail:'Lincolnshire hub. 3 MW links active. 2 positions facing W and SW available for expansion.'},
+  {csr:'CSR-1007',name:'Winter Hill',region:'North',total:7,inUse:6,vacant:1,type:'Microwave',status:'Active',updated:'2026-04-05',lat:53.6320,lng:-2.5030,detail:'Lancashire hub. 6 links active, 1 slot remaining facing SE. Near capacity.'},
+  {csr:'CSR-1008',name:'Mendip Transmitter',region:'South',total:4,inUse:2,vacant:2,type:'Microwave',status:'Active',updated:'2026-03-22',lat:51.2200,lng:-2.6270,detail:'Somerset relay. 2 active links to Bristol area. 2 vacant positions available.'},
+  {csr:'CSR-1009',name:'Pontop Pike',region:'North',total:5,inUse:5,vacant:0,type:'Microwave',status:'Active',updated:'2026-04-01',lat:54.7920,lng:-1.8220,detail:'Fully utilised NE hub. All positions occupied. Expansion requires structural assessment.'},
+  {csr:'CSR-1010',name:'Black Hill',region:'Scotland & NI',total:6,inUse:3,vacant:3,type:'Microwave',status:'Active',updated:'2026-03-29',lat:55.8114,lng:-3.8677,detail:'Central Scotland hub. 3 MW links active. Good capacity for expansion.'},
+  {csr:'CSR-1011',name:'Craigkelly',region:'Scotland & NI',total:4,inUse:2,vacant:2,type:'Microwave',status:'Active',updated:'2026-04-04',lat:56.0690,lng:-3.3800,detail:'Fife relay site. 2 links active. 2 positions facing N and E available.'},
+  {csr:'CSR-1012',name:'Waltham',region:'Midlands',total:6,inUse:4,vacant:2,type:'Microwave',status:'Active',updated:'2026-04-02',lat:52.7540,lng:-0.8010,detail:'East Midlands hub. 4 active links. 2 positions available for Leicestershire deployment.'},
+  {csr:'CSR-1013',name:'Ridge Hill',region:'Midlands',total:3,inUse:2,vacant:1,type:'Fibre',status:'Active',updated:'2026-03-18',lat:52.0580,lng:-2.4670,detail:'Herefordshire site. Fibre backhaul with 2 active connections. 1 spare port.'},
+  {csr:'CSR-1014',name:'Bilsdale West Moor',region:'North',total:5,inUse:4,vacant:1,type:'Microwave',status:'Reserved',updated:'2026-04-06',lat:54.3610,lng:-1.2130,detail:'North Yorkshire. 4 MW links. 1 reserved for planned child site deployment Q2 2026.'},
+  {csr:'CSR-1015',name:'Divis',region:'Scotland & NI',total:5,inUse:3,vacant:2,type:'Microwave',status:'Active',updated:'2026-03-27',lat:54.6120,lng:-5.9790,detail:'Belfast hub. 3 links active serving greater Belfast area. 2 positions available.'},
+  {csr:'CSR-1016',name:'Whitcastle',region:'South',total:3,inUse:3,vacant:0,type:'Fibre',status:'Conflicting',updated:'2026-04-07',lat:51.7810,lng:-2.8620,detail:'Conflicting assignment: port 3 allocated to two different child sites. Resolution pending.'},
+  {csr:'CSR-1017',name:'Lichfield',region:'Midlands',total:4,inUse:2,vacant:2,type:'Microwave',status:'Conflicting',updated:'2026-04-05',lat:52.6870,lng:-1.8270,detail:'Conflicting assignment: MW position 2 has overlapping lease. Legal review in progress.'},
+  {csr:'CSR-1018',name:'Angus',region:'Scotland & NI',total:3,inUse:1,vacant:2,type:'Microwave',status:'Active',updated:'2026-03-20',lat:56.7670,lng:-2.8550,detail:'Rural Scotland relay. 1 active link. 2 vacant positions. Low demand area.'},
+  {csr:'CSR-1019',name:'Caldbeck',region:'North',total:4,inUse:2,vacant:2,type:'Microwave',status:'Active',updated:'2026-04-03',lat:54.7540,lng:-3.0440,detail:'Cumbria relay. 2 active links. 2 positions available for Lake District expansion.'},
+  {csr:'CSR-1020',name:'Oxford Spires',region:'South',total:5,inUse:4,vacant:1,type:'Fibre',status:'Active',updated:'2026-04-06',lat:51.7520,lng:-1.2577,detail:'Fibre backhaul. 4 active connections. 1 spare port facing NE.'}
+];
+
+/* ================================================================
+   MOCK DATA — Feasibility Ranking (15 rows)
+   ================================================================ */
+const feasSites=[
+  {csr:'CSR-2001',name:'Hampstead Heath',region:'South',score:96,current:'BT Fibre',recommended:'Microwave',costCurrent:18200,costRec:6800,status:'Approved'},
+  {csr:'CSR-2002',name:'Emley Moor East',region:'North',score:93,current:'BT Fibre',recommended:'Microwave',costCurrent:16500,costRec:5900,status:'Approved'},
+  {csr:'CSR-2003',name:'Sutton Park',region:'Midlands',score:91,current:'BT Fibre',recommended:'Microwave',costCurrent:17800,costRec:7200,status:'Assessed'},
+  {csr:'CSR-2004',name:'Blackdown Hills',region:'South',score:88,current:'BT Fibre',recommended:'Microwave',costCurrent:15400,costRec:6100,status:'Assessed'},
+  {csr:'CSR-2005',name:'Craigkelly South',region:'Scotland & NI',score:85,current:'BT Fibre',recommended:'Microwave',costCurrent:19100,costRec:7800,status:'Approved'},
+  {csr:'CSR-2006',name:'Pennine Way',region:'North',score:82,current:'BT Fibre',recommended:'Microwave',costCurrent:14200,costRec:5500,status:'Assessed'},
+  {csr:'CSR-2007',name:'Mendip East',region:'South',score:78,current:'BT Fibre',recommended:'VMO2 Fibre',costCurrent:16800,costRec:9200,status:'Assessed'},
+  {csr:'CSR-2008',name:'Cannock Chase',region:'Midlands',score:74,current:'BT Fibre',recommended:'Microwave',costCurrent:15900,costRec:6400,status:'Pending'},
+  {csr:'CSR-2009',name:'Cheviot Hills',region:'North',score:71,current:'BT Fibre',recommended:'Microwave',costCurrent:13800,costRec:5800,status:'Assessed'},
+  {csr:'CSR-2010',name:'Dartmoor North',region:'South',score:65,current:'BT Fibre',recommended:'VMO2 Fibre',costCurrent:17200,costRec:11400,status:'Pending'},
+  {csr:'CSR-2011',name:'Ochil Hills',region:'Scotland & NI',score:58,current:'BT Fibre',recommended:'VMO2 Fibre',costCurrent:14500,costRec:10200,status:'Pending'},
+  {csr:'CSR-2012',name:'Shropshire Hills',region:'Midlands',score:45,current:'Microwave',recommended:'Microwave',costCurrent:6200,costRec:6200,status:'Assessed'},
+  {csr:'CSR-2013',name:'Lake District SW',region:'North',score:38,current:'BT Fibre',recommended:'BT Fibre',costCurrent:18900,costRec:18900,status:'Pending'},
+  {csr:'CSR-2014',name:'Snowdonia Relay',region:'North',score:25,current:'BT Fibre',recommended:'BT Fibre',costCurrent:21400,costRec:21400,status:'Assessed'},
+  {csr:'CSR-2015',name:'Cairngorms',region:'Scotland & NI',score:18,current:'BT Fibre',recommended:'BT Fibre',costCurrent:22800,costRec:22800,status:'Pending'}
+];
+
+/* ================================================================
+   TAB SWITCHING — lazy chart init
+   ================================================================ */
+let tab1Init=false, tab2Init=false;
+
+function sw(t){
+  document.querySelectorAll('.pg').forEach((p,i)=>p.classList.toggle('on',i===t));
+  document.querySelectorAll('.tab').forEach((p,i)=>p.classList.toggle('on',i===t));
+  if(t===0 && !tab1Init){ initTab1(); tab1Init=true; }
+  if(t===1 && !tab2Init){ initTab2(); tab2Init=true; }
+}
+
+/* ================================================================
+   TAB 1 INIT
+   ================================================================ */
+function initTab1(){
+  // Capacity by Region — grouped bar
+  new Chart(document.getElementById('chCapacityRegion'),{
+    type:'bar',
+    data:{
+      labels:['North','South','Midlands','Scotland & NI'],
+      datasets:[
+        {label:'Total Rights',data:[36,30,19,18],backgroundColor:'#1a2d4f'},
+        {label:'In Use',data:[27,24,13,9],backgroundColor:'#2a5f8f'},
+        {label:'Vacant',data:[9,6,6,9],backgroundColor:'#166534'}
+      ]
+    },
+    options:{
+      maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{x:{grid:{display:false}},y:{grid:{color:'#f1f3f4'},title:{display:true,text:'Dish Positions'}}}
+    }
+  });
+
+  // Utilisation Trend — line chart with target
+  const months=['May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr'];
+  new Chart(document.getElementById('chUtilTrend'),{
+    type:'line',
+    data:{
+      labels:months,
+      datasets:[
+        {label:'Utilisation %',data:[65,67,68,69,70,70,71,72,72,73,73,73],borderColor:'#2a5f8f',backgroundColor:'rgba(42,95,143,.08)',fill:true,tension:.3,pointRadius:3,pointBackgroundColor:'#2a5f8f'},
+        {label:'80% Target',data:[80,80,80,80,80,80,80,80,80,80,80,80],borderColor:'#C8102E',borderDash:[6,4],pointRadius:0,borderWidth:1.5,fill:false}
+      ]
+    },
+    options:{
+      maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{x:{grid:{display:false}},y:{grid:{color:'#f1f3f4'},min:50,max:100,ticks:{callback:v=>v+'%'}}}
+    }
+  });
+
+  // Map
+  drawMap();
+
+  // Table
+  renderDishTable();
+}
+
+/* ================================================================
+   MAP — Leaflet with CartoCDN tiles
+   ================================================================ */
+function drawMap(){
+  const map=L.map('mapWrap1',{zoomControl:true,attributionControl:false}).setView([53.5,-2.5],6);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
+    maxZoom:19,
+    attribution:'\u00a9 CartoDB \u00a9 OpenStreetMap contributors'
+  }).addTo(map);
+
+  dishSites.forEach(s=>{
+    let color='#166534'; // green = vacant
+    if(s.vacant===0) color='#C8102E'; // red = fully utilised
+    else if(s.vacant===1) color='#d97706'; // amber = 1 slot
+
+    const marker=L.circleMarker([s.lat,s.lng],{
+      radius:7,
+      fillColor:color,
+      color:'#fff',
+      weight:2,
+      fillOpacity:0.9
+    }).addTo(map);
+
+    marker.bindPopup(
+      '<div style="font-size:12px;line-height:1.5">'+
+      '<b>'+s.name+'</b><br>'+
+      s.csr+' · '+s.region+'<br>'+
+      'Total rights: <b>'+s.total+'</b><br>'+
+      'In use: <b>'+s.inUse+'</b><br>'+
+      'Vacant: <b>'+s.vacant+'</b>'+
+      '</div>'
+    );
+    marker.bindTooltip(s.name,{direction:'top',offset:[0,-8]});
+  });
+
+  window._leafletMap=map;
+}
+
+/* ================================================================
+   DISH RIGHTS TABLE with expandable rows
+   ================================================================ */
+function renderDishTable(){
+  const tb=document.getElementById('tblDishBody');
+  tb.innerHTML=dishSites.map((s,i)=>{
+    const statusClass=s.status==='Active'?'pg2':s.status==='Reserved'?'pb':s.status==='Conflicting'?'pr':'pn';
+    return '<tr>'+
+      '<td>'+s.csr+'</td>'+
+      '<td>'+s.name+'</td>'+
+      '<td>'+s.region+'</td>'+
+      '<td>'+s.total+'</td>'+
+      '<td>'+s.inUse+'</td>'+
+      '<td style="font-weight:500;color:'+(s.vacant===0?'#C8102E':s.vacant===1?'#d97706':'#166534')+'">'+s.vacant+'</td>'+
+      '<td><span class="pill '+(s.type==='Microwave'?'pb':'pa')+'">'+s.type+'</span></td>'+
+      '<td><span class="pill '+statusClass+'">'+s.status+'</span></td>'+
+      '<td>'+s.updated+'</td>'+
+      '<td><button class="expand-btn" onclick="toggleDetail('+i+')">&#x25BC;</button></td>'+
+      '</tr>'+
+      '<tr class="detail-row" id="detail_'+i+'"><td colspan="10">'+s.detail+'</td></tr>';
+  }).join('');
+}
+
+function toggleDetail(i){
+  const row=document.getElementById('detail_'+i);
+  if(row) row.classList.toggle('open');
+}
+
+/* ================================================================
+   TAB 2 INIT
+   ================================================================ */
+function initTab2(){
+  // Feasibility Scoring Distribution — horizontal bar
+  const bands=['0-20%','21-40%','41-60%','61-80%','81-100%'];
+  const bandCounts=[2,1,2,4,6];
+  const bandColors=['#C8102E','#d97706','#d97706','#2a5f8f','#166534'];
+
+  new Chart(document.getElementById('chFeasDist'),{
+    type:'bar',
+    data:{
+      labels:bands,
+      datasets:[{
+        label:'Sites',
+        data:bandCounts,
+        backgroundColor:bandColors
+      }]
+    },
+    options:{
+      indexAxis:'y',
+      maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{x:{grid:{color:'#f1f3f4'},title:{display:true,text:'Number of Sites'}},y:{grid:{display:false}}}
+    }
+  });
+
+  // Cost Comparison — grouped bar
+  const sampleSites=['Hampstead\nHeath','Emley Moor\nEast','Sutton\nPark','Blackdown\nHills','Craigkelly\nSouth'];
+  new Chart(document.getElementById('chCostComp'),{
+    type:'bar',
+    data:{
+      labels:sampleSites,
+      datasets:[
+        {label:'BT Fibre Cost',data:[18200,16500,17800,15400,19100],backgroundColor:'#C8102E'},
+        {label:'Microwave Cost',data:[6800,5900,7200,6100,7800],backgroundColor:'#166534'}
+      ]
+    },
+    options:{
+      maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{x:{grid:{display:false}},y:{grid:{color:'#f1f3f4'},title:{display:true,text:'Annual Cost (\u00a3)'},ticks:{callback:v=>'\u00a3'+v.toLocaleString()}}}
+    }
+  });
+
+  // Feasibility table
+  renderFeasTable();
+
+  // Add info icons for tab 2
+  addInfoIcon('cardFeasDist','chart-feas-distribution');
+  addInfoIcon('cardCostComp','chart-cost-comparison');
+  addInfoIcon('cardFeasTable','table-feasibility');
+  addInfoIconToEl(document.getElementById('kpiAssessed'),'kpi-sites-assessed');
+  addInfoIconToEl(document.getElementById('kpiHighFeas'),'kpi-high-feasibility');
+  addInfoIconToEl(document.getElementById('kpiBTFibre'),'kpi-bt-fibre');
+  addInfoIconToEl(document.getElementById('kpiSavings'),'kpi-potential-savings');
+
+  // Re-init feedback bubbles for new elements
+  initFeedbackBubbles();
+}
+
+function renderFeasTable(){
+  const tb=document.getElementById('tblFeasBody');
+  tb.innerHTML=feasSites.map(s=>{
+    const saving=s.costCurrent-s.costRec;
+    const statusClass=s.status==='Approved'?'pg2':s.status==='Assessed'?'pb':s.status==='Pending'?'pa':'pn';
+    const scoreColor=s.score>=80?'#166534':s.score>=60?'#2a5f8f':s.score>=40?'#d97706':'#C8102E';
+    return '<tr>'+
+      '<td>'+s.csr+'</td>'+
+      '<td>'+s.name+'</td>'+
+      '<td>'+s.region+'</td>'+
+      '<td><span style="font-weight:600;color:'+scoreColor+'">'+s.score+'%</span></td>'+
+      '<td>'+s.current+'</td>'+
+      '<td>'+s.recommended+'</td>'+
+      '<td>\u00a3'+s.costCurrent.toLocaleString()+'</td>'+
+      '<td>\u00a3'+s.costRec.toLocaleString()+'</td>'+
+      '<td style="font-weight:500;color:'+(saving>0?'#166534':'var(--color-text-secondary)')+'">'+(saving>0?'\u00a3'+saving.toLocaleString():'\u2014')+'</td>'+
+      '<td><span class="pill '+statusClass+'">'+s.status+'</span></td>'+
+      '</tr>';
+  }).join('');
+}
+
+/* ================================================================
+   ADD INFO ICONS — Tab 1
+   ================================================================ */
+function addAllInfoIcons(){
+  addInfoIconToEl(document.getElementById('kpiTotalSites'),'kpi-total-sites');
+  addInfoIconToEl(document.getElementById('kpiVacant'),'kpi-vacant-rights');
+  addInfoIconToEl(document.getElementById('kpiUtilisation'),'kpi-utilisation');
+  addInfoIconToEl(document.getElementById('kpiAvgCapacity'),'kpi-avg-capacity');
+  addInfoIconToEl(document.getElementById('kpiConflicts'),'kpi-conflicts');
+  addInfoIcon('cardCapacityRegion','chart-capacity-region');
+  addInfoIcon('cardUtilTrend','chart-util-trend');
+  addInfoIcon('cardSiteMap','map-dish-rights');
+  addInfoIcon('cardDishTable','table-dish-rights');
+}
+
+/* ================================================================
+   INIT
+   ================================================================ */
+addAllInfoIcons();
+initTab1();
+tab1Init=true;
+setTimeout(()=>{ window._leafletMap && window._leafletMap.invalidateSize(); },100);
+
+/* ================================================================
+   FEEDBACK SYSTEM (replicated from US1)
+   ================================================================ */
+let feedbackData={
+  dashboard:DASHBOARD_ID,
+  version:DASHBOARD_VERSION,
+  reviewer:'',
+  date:new Date().toISOString().split('T')[0],
+  overall:[],
+  visuals:[]
+};
+
+function loadFeedback(){
+  const saved=localStorage.getItem('fb_'+DASHBOARD_ID);
+  if(saved){ try{ feedbackData=JSON.parse(saved); }catch(e){} }
+  renderOverallComments();
+  updateBubbles();
+  updateCount();
+}
+
+function saveFeedback(){
+  localStorage.setItem('fb_'+DASHBOARD_ID,JSON.stringify(feedbackData));
+  updateCount();
+}
+
+function toggleFeedbackMode(){
+  document.body.classList.toggle('feedback-mode');
+  const btn=document.querySelector('.fb-toggle');
+  btn.classList.toggle('active');
+  btn.textContent=document.body.classList.contains('feedback-mode')?'\u2715 Exit Feedback':'\uD83D\uDCAC Feedback';
+}
+
+function initFeedbackBubbles(){
+  document.querySelectorAll('[data-visual-id]').forEach(el=>{
+    if(el.querySelector('.fb-bubble')) return;
+    el.style.position='relative';
+    const bubble=document.createElement('button');
+    bubble.className='fb-bubble';
+    bubble.innerHTML='\uD83D\uDCAC';
+    bubble.title='Add feedback for: '+(el.dataset.visualName||el.dataset.visualId);
+    bubble.onclick=function(e){
+      e.stopPropagation();
+      openFeedbackPanel(el);
+    };
+    el.appendChild(bubble);
+  });
+}
+
+function openFeedbackPanel(el){
+  document.querySelectorAll('.fb-input-panel.open').forEach(p=>p.classList.remove('open'));
+  let panel=el.querySelector('.fb-input-panel');
+  if(!panel){
+    panel=document.createElement('div');
+    panel.className='fb-input-panel';
+    const vid=el.dataset.visualId;
+    const vname=el.dataset.visualName||vid;
+    const tab=el.closest('[data-tab]')?.dataset.tab||'Unknown';
+    const existing=feedbackData.visuals.filter(v=>v.id===vid);
+    let existingHtml='';
+    if(existing.length>0){
+      existingHtml='<div class="fb-existing"><strong>Existing comments:</strong><br>'+
+        existing.map((c,i)=>'\u2022 ['+c.priority+'] '+c.type+': '+c.comment+' <button class="fb-remove-comment" onclick="removeVisualComment(\''+vid+'\','+i+',\''+tab+'\');this.closest(\'.fb-input-panel\').classList.remove(\'open\');">\u2715</button>').join('<br>')+
+        '</div>';
+    }
+    panel.innerHTML=
+      '<div style="font-weight:600;margin-bottom:6px;font-size:12px">'+vname+'</div>'+
+      '<div style="color:#757575;margin-bottom:6px">Tab: '+tab+'</div>'+
+      existingHtml+
+      '<textarea id="fbInput_'+vid+'" placeholder="What should change about this visual?"></textarea>'+
+      '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'+
+        '<select id="fbType_'+vid+'">'+
+          '<option value="change">\u270F\uFE0F Change</option>'+
+          '<option value="remove">\uD83D\uDDD1\uFE0F Remove</option>'+
+          '<option value="add">\u2795 Add new</option>'+
+          '<option value="question">\u2753 Question</option>'+
+          '<option value="approve">\u2705 Approve</option>'+
+        '</select>'+
+        '<select id="fbPriority_'+vid+'">'+
+          '<option value="high">\uD83D\uDD34 High</option>'+
+          '<option value="medium" selected>\uD83D\uDFE1 Medium</option>'+
+          '<option value="low">\uD83D\uDFE2 Low</option>'+
+        '</select>'+
+        '<button class="fb-cancel" onclick="this.closest(\'.fb-input-panel\').classList.remove(\'open\')">Cancel</button>'+
+        '<button class="fb-save" onclick="saveVisualComment(\''+vid+'\',\''+vname+'\',\''+tab+'\')">Save</button>'+
+      '</div>';
+    el.appendChild(panel);
+  } else {
+    const vid=el.dataset.visualId;
+    const existing=feedbackData.visuals.filter(v=>v.id===vid);
+    const existingDiv=panel.querySelector('.fb-existing');
+    if(existing.length>0){
+      const html='<div class="fb-existing"><strong>Existing comments:</strong><br>'+
+        existing.map((c,i)=>'\u2022 ['+c.priority+'] '+c.type+': '+c.comment+' <button class="fb-remove-comment" onclick="removeVisualComment(\''+vid+'\','+i+',\''+(el.closest('[data-tab]')?.dataset.tab||'Unknown')+'\');this.closest(\'.fb-input-panel\').classList.remove(\'open\');">\u2715</button>').join('<br>')+
+        '</div>';
+      if(existingDiv) existingDiv.outerHTML=html;
+      else panel.querySelector('textarea').insertAdjacentHTML('beforebegin',html);
+    } else if(existingDiv){
+      existingDiv.remove();
+    }
+  }
+  panel.classList.add('open');
+}
+
+function saveVisualComment(id,name,tab){
+  const comment=document.getElementById('fbInput_'+id)?.value.trim();
+  if(!comment) return;
+  feedbackData.visuals.push({
+    id:id,name:name,tab:tab,
+    type:document.getElementById('fbType_'+id)?.value||'change',
+    comment:comment,
+    priority:document.getElementById('fbPriority_'+id)?.value||'medium'
+  });
+  saveFeedback();
+  updateBubbles();
+  const input=document.getElementById('fbInput_'+id);
+  if(input) input.value='';
+  document.querySelectorAll('.fb-input-panel.open').forEach(p=>p.classList.remove('open'));
+}
+
+function removeVisualComment(id,index,tab){
+  const matching=feedbackData.visuals.filter(v=>v.id===id);
+  if(matching[index]){
+    const globalIndex=feedbackData.visuals.indexOf(matching[index]);
+    feedbackData.visuals.splice(globalIndex,1);
+    saveFeedback();
+    updateBubbles();
+  }
+}
+
+function updateBubbles(){
+  document.querySelectorAll('[data-visual-id]').forEach(el=>{
+    const vid=el.dataset.visualId;
+    const bubble=el.querySelector('.fb-bubble');
+    if(!bubble) return;
+    const count=feedbackData.visuals.filter(v=>v.id===vid).length;
+    bubble.classList.toggle('has-comment',count>0);
+    const oldBadge=bubble.querySelector('.fb-badge');
+    if(oldBadge) oldBadge.remove();
+    if(count>0){
+      const badge=document.createElement('span');
+      badge.className='fb-badge';
+      badge.textContent=count;
+      bubble.appendChild(badge);
+    }
+  });
+}
+
+function addOverallComment(){
+  const input=document.getElementById('fbOverallInput');
+  const priority=document.getElementById('fbOverallPriority');
+  if(!input||!input.value.trim()) return;
+  feedbackData.overall.push({comment:input.value.trim(),priority:priority?.value||'medium'});
+  saveFeedback();
+  renderOverallComments();
+  input.value='';
+}
+
+function renderOverallComments(){
+  const container=document.getElementById('fbOverallComments');
+  if(!container) return;
+  container.innerHTML=feedbackData.overall.map((c,i)=>
+    '<div class="fb-comment-item">'+
+      '<div>'+
+        '<div class="fb-comment-text">'+c.comment+'</div>'+
+        '<div class="fb-comment-meta">'+(c.priority==='high'?'\uD83D\uDD34':c.priority==='medium'?'\uD83D\uDFE1':'\uD83D\uDFE2')+' '+c.priority+' priority</div>'+
+      '</div>'+
+      '<button class="fb-remove-comment" onclick="removeOverallComment('+i+')">\u2715</button>'+
+    '</div>'
+  ).join('');
+}
+
+function removeOverallComment(index){
+  feedbackData.overall.splice(index,1);
+  saveFeedback();
+  renderOverallComments();
+}
+
+function updateCount(){
+  const el=document.getElementById('fbCount');
+  if(el) el.textContent=feedbackData.overall.length+feedbackData.visuals.length;
+}
+
+function exportFeedback(){
+  feedbackData.reviewer = prompt('Your name:') || 'Anonymous';
+  feedbackData.date = new Date().toISOString().split('T')[0];
+  const json = JSON.stringify(feedbackData, null, 2);
+  const commentCount = feedbackData.overall.length + feedbackData.visuals.length;
+  fetch('/api/feedback', {method:'POST',headers:{'Content-Type':'application/json'},body:json})
+  .then(r => r.json())
+  .then(data => {
+    if(data.success){
+      showSubmitSuccess(commentCount, feedbackData.reviewer);
+      feedbackData.overall=[];feedbackData.visuals=[];
+      saveFeedback();renderOverallComments();updateBubbles();
+    }
+  })
+  .catch(() => { showSubmitSuccess(commentCount, feedbackData.reviewer); });
+}
+
+function showSubmitSuccess(count, reviewer){
+  let modal = document.getElementById('fbFallbackModal');
+  if(modal) modal.remove();
+  modal = document.createElement('div');
+  modal.id = 'fbFallbackModal';
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:10000;display:flex;align-items:flex-start;justify-content:center;padding-top:60px';
+  modal.innerHTML =
+    '<div style="background:#fff;border-radius:12px;padding:36px;max-width:420px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.2);font-family:system-ui,sans-serif;text-align:center">' +
+    '<div style="width:56px;height:56px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px">✓</div>' +
+    '<h3 style="font-size:18px;color:#1a2d4f;margin-bottom:8px">Feedback Submitted</h3>' +
+    '<p style="font-size:13px;color:#757575;margin-bottom:6px">' + count + ' comment' + (count!==1?'s':'') + ' from <strong>' + reviewer + '</strong></p>' +
+    '<p style="font-size:12px;color:#757575;margin-bottom:24px">The team will review your comments and get back to you with any questions or updates.</p>' +
+    '<button onclick="document.getElementById(\'fbFallbackModal\').remove()" style="background:#1a2d4f;color:#fff;border:none;padding:10px 28px;border-radius:6px;cursor:pointer;font-size:13px;font-family:inherit">Done</button>' +
+    '</div>';
+  modal.onclick = function(e){ if(e.target === modal) modal.remove(); };
+  document.body.appendChild(modal);
+}
+
+function startStatusPolling(){
+  const poll=setInterval(()=>{
+    fetch('/api/status/'+DASHBOARD_ID).then(r=>r.json()).then(s=>{
+      if(s.status==='complete'){clearInterval(poll);showStatusBanner('success','Dashboard updated! Refresh to see changes.');
+        const b=document.getElementById('statusBanner');if(b){const btn=document.createElement('button');btn.textContent='Refresh';btn.style.cssText='margin-left:12px;padding:4px 12px;border:none;border-radius:4px;background:#1a2d4f;color:#fff;cursor:pointer;font-size:11px';btn.onclick=()=>location.reload();b.appendChild(btn);}
+      }else if(s.status==='questions_pending'){clearInterval(poll);showStatusBanner('warning','Claude has clarifying questions.');loadQuestions();}
+      else if(s.status==='error'){clearInterval(poll);showStatusBanner('error','Error: '+(s.message||'Failed'));}
+    }).catch(()=>clearInterval(poll));
+  },3000);
+}
+function showStatusBanner(type,message){
+  let b=document.getElementById('statusBanner');
+  if(!b){b=document.createElement('div');b.id='statusBanner';const t=document.querySelector('.topbar');t.parentNode.insertBefore(b,t.nextSibling);}
+  const c={success:{bg:'#dcfce7',border:'#166534',text:'#166534'},warning:{bg:'#fef3c7',border:'#d97706',text:'#92400e'},error:{bg:'#fee2e2',border:'#991b1b',text:'#991b1b'},info:{bg:'#e0f2fe',border:'#0284c7',text:'#0369a1'}}[type]||{bg:'#e0f2fe',border:'#0284c7',text:'#0369a1'};
+  b.style.cssText='padding:10px 18px;font-size:12px;display:flex;align-items:center;gap:8px;background:'+c.bg+';border-bottom:2px solid '+c.border+';color:'+c.text;
+  b.innerHTML=message;
+}
+function loadQuestions(){
+  fetch('/api/questions/'+DASHBOARD_ID).then(r=>r.json()).then(d=>{
+    if(d.questions&&d.questions.length>0)showQuestionsPanel(d.questions);
+  }).catch(()=>{});
+}
+function showQuestionsPanel(questions){
+  let p=document.getElementById('questionsPanel');
+  if(!p){p=document.createElement('div');p.id='questionsPanel';p.style.cssText='background:#fffbeb;border:1px solid #f59e0b;border-radius:8px;padding:16px 20px;margin:14px;font-size:12px';
+    const ref=document.querySelector('.fb-export-bar');
+    if(ref)ref.parentNode.insertBefore(p,ref.nextSibling);
+    else document.querySelector('.topbar').after(p);
+  }
+  p.innerHTML='<h4 style="color:#92400e;margin-bottom:12px;font-size:14px">Clarifying Questions from Claude</h4>'+
+    '<p style="color:#78350f;margin-bottom:12px">Please answer these questions so changes can be applied:</p>'+
+    questions.map((q,i)=>'<div style="background:#fff;border:1px solid #e0e0e0;border-radius:6px;padding:10px;margin-bottom:8px">'+
+      '<div style="font-weight:600;margin-bottom:4px">Q'+(i+1)+': '+q.question+'</div>'+
+      (q.context?'<div style="color:#757575;font-size:11px;margin-bottom:6px">Context: '+q.context+'</div>':'')+
+      '<textarea id="answer_'+i+'" placeholder="Your answer..." style="width:100%;border:1px solid #e0e0e0;border-radius:4px;padding:6px;font-size:11px;font-family:inherit;min-height:40px;margin-top:4px"></textarea></div>').join('')+
+    '<button onclick="submitAnswers('+questions.length+')" style="background:#1a2d4f;color:#fff;border:none;padding:8px 20px;border-radius:4px;cursor:pointer;font-size:12px;margin-top:8px">Submit Answers</button>';
+}
+function submitAnswers(count){
+  const answers=[];for(let i=0;i<count;i++){const el=document.getElementById('answer_'+i);answers.push(el?el.value.trim():'');}
+  fetch('/api/answers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dashboard:DASHBOARD_ID,answers,date:new Date().toISOString().split('T')[0]})})
+  .then(r=>r.json()).then(d=>{
+    if(d.success){const p=document.getElementById('questionsPanel');if(p)p.remove();showStatusBanner('success','Answers submitted! Processing...');startStatusPolling();}
+  }).catch(()=>showStatusBanner('error','Could not submit answers.'));
+}
+
+function clearAllFeedback(){
+  if(!confirm('Clear all feedback comments?')) return;
+  feedbackData.overall=[];
+  feedbackData.visuals=[];
+  saveFeedback();
+  renderOverallComments();
+  updateBubbles();
+}
+
+// Init feedback on load
+document.addEventListener('DOMContentLoaded',function(){
+  initFeedbackBubbles();
+  loadFeedback();
+  fetch('/api/questions/'+DASHBOARD_ID).then(r=>r.json()).then(d=>{
+    if(d.questions&&d.questions.length>0){document.body.classList.add('feedback-mode');
+      const btn=document.querySelector('.fb-toggle');if(btn){btn.classList.add('active');btn.textContent='\u2715 Exit Feedback';}
+      showStatusBanner('warning','Claude has clarifying questions.');showQuestionsPanel(d.questions);
+    }
+  }).catch(()=>{});
+});
+</script>
+</body>
+</html>

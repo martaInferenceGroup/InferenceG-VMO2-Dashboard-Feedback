@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>US4 — Purchasing Equipment Pipeline v1.0</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{--font-sans:system-ui,-apple-system,sans-serif;--color-background-primary:#ffffff;--color-background-secondary:#f8f9fa;--color-background-tertiary:#f1f3f4;--color-text-primary:#212121;--color-text-secondary:#757575;--color-border-tertiary:#e0e0e0;--border-radius-lg:8px;--border-radius-md:6px}
+*{box-sizing:border-box;margin:0;padding:0}
+.dw{font-family:var(--font-sans);background:var(--color-background-tertiary)}
+.topbar{background:#1a2d4f;padding:10px 18px;display:flex;align-items:center;justify-content:space-between;border-radius:var(--border-radius-lg) var(--border-radius-lg) 0 0}
+.topbar-title{color:#fff;font-size:14px;font-weight:500}
+.topbar-sub{color:rgba(255,255,255,.5);font-size:11px;margin-top:2px}
+.topbar-right{color:rgba(255,255,255,.45);font-size:11px}
+.tabs{display:flex;background:var(--color-background-primary);border-bottom:1.5px solid var(--color-border-tertiary);padding:0 16px}
+.tab{padding:9px 16px;font-size:12px;color:var(--color-text-secondary);cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-1.5px;white-space:nowrap}
+.tab.on{color:#1a2d4f;font-weight:500;border-bottom-color:#C8102E}
+.tab:hover:not(.on){background:var(--color-background-secondary)}
+.pg{display:none;padding:14px;background:var(--color-background-secondary)}
+.pg.on{display:block}
+.fb{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--color-background-primary);padding:9px 12px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);margin-bottom:12px}
+.fb select,.fb input[type=text]{font-size:12px;padding:3px 7px;border-radius:4px;border:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary);color:var(--color-text-primary);height:26px}
+.fl{font-size:11px;color:var(--color-text-secondary)}
+.krow{display:grid;gap:10px;margin-bottom:12px}
+.k5{grid-template-columns:repeat(5,minmax(0,1fr))}
+.k4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.k3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.k2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.kpi{background:var(--color-background-primary);border-radius:var(--border-radius-md);padding:11px 13px;border:0.5px solid var(--color-border-tertiary);position:relative}
+.kpi-lbl{font-size:11px;color:var(--color-text-secondary);line-height:1.3;margin-bottom:3px}
+.kpi-val{font-size:24px;font-weight:500;color:var(--color-text-primary);line-height:1}
+.kpi-sub{font-size:10px;margin-top:3px;color:var(--color-text-secondary)}
+.kpi.red .kpi-val{color:#C8102E}
+.kpi.amb .kpi-val{color:#d97706}
+.kpi.grn .kpi-val{color:#166534}
+.cg2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.cc{background:var(--color-background-primary);border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);padding:12px;margin-bottom:0;overflow:hidden;position:relative}
+.cc.full{margin-bottom:12px}
+.cc h4{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-secondary);margin-bottom:10px}
+.leg{display:flex;gap:12px;flex-wrap:wrap;font-size:10px;color:var(--color-text-secondary);margin-top:8px}
+.li{display:flex;align-items:center;gap:4px}
+.lsq{width:9px;height:9px;border-radius:2px}
+.lc{width:9px;height:9px;border-radius:50%}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{font-size:10px;font-weight:500;color:var(--color-text-secondary);padding:6px 8px;text-align:left;border-bottom:1px solid var(--color-border-tertiary);background:var(--color-background-secondary);white-space:nowrap;cursor:pointer}
+th:hover{background:var(--color-background-tertiary)}
+td{padding:6px 8px;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-primary);vertical-align:middle}
+tr:hover td{background:var(--color-background-tertiary)}
+tr:last-child td{border-bottom:none}
+.pill{display:inline-block;padding:1px 7px;border-radius:20px;font-size:10px;font-weight:500;white-space:nowrap}
+.pr{background:#fee2e2;color:#991b1b}
+.pa{background:#fef3c7;color:#92400e}
+.pg2{background:#dcfce7;color:#166534}
+.pb{background:#dbeafe;color:#1e40af}
+.pn{background:var(--color-background-tertiary);color:var(--color-text-secondary)}
+.heatmap-grid{display:grid;gap:2px}
+.hm-cell{padding:6px 4px;font-size:10px;text-align:center;border-radius:3px}
+.illustrative-banner{background:#fef3c7;border:1px solid #f59e0b;border-radius:4px;padding:5px 10px;font-size:10px;color:#92400e;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+
+/* Info icon styles */
+.info-icon-btn{position:absolute;top:8px;right:8px;width:18px;height:18px;border-radius:50%;border:1px solid #bbb;background:var(--color-background-secondary);color:#999;font-size:11px;line-height:16px;text-align:center;cursor:pointer;z-index:5;font-family:serif;font-weight:600;transition:background .2s,color .2s,border-color .2s}
+.info-icon-btn:hover{background:#e8f0fe;color:#2a5f8f;border-color:#2a5f8f}
+.info-panel{display:none;position:relative;background:#f0f4fa;border:1px solid #d0daea;border-radius:4px;padding:8px 10px;margin-top:8px;font-size:10px;line-height:1.5;color:#333;z-index:4;animation:infoFadeIn .2s ease}
+.info-panel.open{display:block}
+@keyframes infoFadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+
+/* Version badge */
+.version-badge{background:rgba(255,255,255,.1);color:rgba(255,255,255,.5);font-size:10px;padding:2px 8px;border-radius:3px;margin-left:10px}
+
+/* Feedback Mode Toggle */
+.fb-toggle{background:#C8102E;border:1px solid #C8102E;color:#fff;font-size:12px;padding:6px 16px;border-radius:4px;cursor:pointer;font-family:var(--font-sans);transition:all .2s;font-weight:600}
+.fb-toggle:hover{background:#a00d24;border-color:#a00d24;color:#fff}
+.fb-toggle.active{background:#d97706;border-color:#d97706;color:#fff;font-weight:600}
+
+/* Feedback bubble on visuals */
+.fb-bubble{display:none;position:absolute;top:6px;right:28px;width:20px;height:20px;border-radius:50%;background:#d97706;color:#fff;font-size:12px;border:none;cursor:pointer;align-items:center;justify-content:center;z-index:1000;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .15s}
+.fb-bubble:hover{transform:scale(1.15)}
+.fb-bubble.has-comment{background:#C8102E}
+body.feedback-mode .fb-bubble{display:flex}
+
+/* Comment count badge */
+.fb-badge{position:absolute;top:-4px;right:-4px;width:14px;height:14px;border-radius:50%;background:#C8102E;color:#fff;font-size:8px;display:flex;align-items:center;justify-content:center;font-weight:700}
+
+/* Feedback input panel */
+.fb-input-panel{display:none;position:absolute;top:32px;right:6px;width:320px;max-height:400px;overflow-y:auto;background:#fff;border:1px solid #e0e0e0;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.15);z-index:1001;padding:10px;font-size:11px}
+.fb-input-panel.open{display:block}
+.fb-input-panel textarea{width:100%;border:1px solid #e0e0e0;border-radius:4px;padding:6px 8px;font-size:11px;font-family:var(--font-sans);resize:vertical;min-height:60px;margin-bottom:6px}
+.fb-input-panel select{font-size:11px;padding:3px 6px;border:1px solid #e0e0e0;border-radius:4px;margin-right:6px}
+.fb-input-panel button{font-size:11px;padding:3px 10px;border-radius:4px;border:none;cursor:pointer;font-family:var(--font-sans)}
+.fb-input-panel .fb-save{background:#1a2d4f;color:#fff}
+.fb-input-panel .fb-save:hover{background:#2a4060}
+.fb-input-panel .fb-cancel{background:#f1f3f4;color:#333;margin-right:6px}
+.fb-input-panel .fb-delete{background:#fee2e2;color:#991b1b;margin-left:auto}
+
+/* Overall feedback panel */
+.fb-overall{display:none;background:#fffbeb;border:1px solid #f59e0b;border-radius:6px;padding:12px 16px;margin:0 14px 12px 14px}
+body.feedback-mode .fb-overall{display:block}
+.fb-overall h4{font-size:12px;color:#92400e;margin-bottom:8px}
+.fb-overall textarea{width:100%;border:1px solid #e0e0e0;border-radius:4px;padding:6px 8px;font-size:11px;font-family:var(--font-sans);resize:vertical;min-height:50px;margin-bottom:6px}
+.fb-overall .fb-comment-list{margin-top:8px}
+.fb-overall .fb-comment-item{background:#fff;border:1px solid #e0e0e0;border-radius:4px;padding:6px 8px;margin-bottom:4px;font-size:11px;display:flex;justify-content:space-between;align-items:start}
+.fb-overall .fb-comment-text{flex:1;margin-right:8px}
+.fb-overall .fb-comment-meta{font-size:9px;color:#757575;margin-top:2px}
+.fb-overall .fb-remove-comment{background:none;border:none;color:#991b1b;cursor:pointer;font-size:13px;padding:0 2px}
+
+/* Export bar */
+.fb-export-bar{display:none;background:#1a2d4f;padding:8px 16px;align-items:center;justify-content:space-between}
+body.feedback-mode .fb-export-bar{display:flex}
+.fb-export-bar span{color:rgba(255,255,255,.7);font-size:11px}
+.fb-export-bar .fb-count{color:#f59e0b;font-weight:600}
+.fb-export-bar button{font-size:11px;padding:4px 14px;border-radius:4px;border:none;cursor:pointer;font-family:var(--font-sans)}
+.fb-export-btn{background:#f59e0b;color:#000;font-weight:500}
+.fb-export-btn:hover{background:#d97706}
+.fb-clear-btn{background:rgba(255,255,255,.1);color:rgba(255,255,255,.7);margin-left:8px}
+.fb-clear-btn:hover{background:rgba(255,255,255,.2);color:#fff}
+
+/* Existing comment indicator */
+.fb-existing{background:#fef3c7;border:1px solid #fde68a;border-radius:4px;padding:6px 8px;margin-top:6px;font-size:10px;color:#92400e;line-height:1.4}
+.fb-existing strong{color:#78350f}
+
+/* Gantt / timeline styles */
+.gantt-row{display:flex;align-items:center;gap:8px;margin-bottom:3px;font-size:10px}
+.gantt-label{min-width:80px;color:var(--color-text-secondary);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gantt-bar-wrap{flex:1;height:18px;background:var(--color-background-tertiary);border-radius:3px;position:relative;overflow:hidden}
+.gantt-bar{height:100%;border-radius:3px;position:absolute;top:0}
+.gantt-status{min-width:70px;font-size:9px;font-weight:500}
+
+/* Expandable row */
+.expand-row{display:none;background:#f8f9fa}
+.expand-row.open{display:table-row}
+.expand-content{padding:10px 16px;font-size:11px;color:var(--color-text-secondary)}
+.expand-toggle{cursor:pointer;color:#2a5f8f;font-weight:500}
+.expand-toggle:hover{text-decoration:underline}
+
+/* Sort indicator */
+th .sort-arrow{font-size:8px;margin-left:3px;opacity:0.5}
+th.sorted .sort-arrow{opacity:1}
+</style>
+</head>
+<body>
+<div class="dw">
+<div class="topbar">
+  <div><div class="topbar-title">Infrastructure Upgrade Programme — Purchasing Equipment Pipeline</div><div class="topbar-sub">VMO2 · Procurement & Supply Chain · Q1 2026</div></div>
+  <div class="topbar-right">Updated daily · Last refresh 08 Apr 2026 09:15<button class="fb-toggle" onclick="toggleFeedbackMode()">&#x1F4AC; Feedback</button><span class="version-badge">v1.0</span></div>
+</div>
+<div class="tabs">
+  <div class="tab on">Pipeline Overview</div>
+</div>
+<div class="fb-export-bar">
+  <span>Feedback Mode — <span class="fb-count" id="fbCount">0</span> comments</span>
+  <div>
+    <button class="fb-export-btn" onclick="exportFeedback()">Submit Feedback</button>
+    <button class="fb-clear-btn" onclick="clearAllFeedback()">Clear All</button>
+  </div>
+</div>
+
+<div class="pg on" id="pg0" data-tab="Pipeline Overview">
+<div class="fb-overall" id="fbOverall">
+  <h4>Overall Dashboard Feedback</h4>
+  <div style="display:flex;gap:6px;align-items:end">
+    <div style="flex:1">
+      <textarea id="fbOverallInput" placeholder="Add overall feedback about this dashboard..."></textarea>
+      <div style="display:flex;align-items:center;gap:6px">
+        <select id="fbOverallPriority">
+          <option value="high">&#x1F534; High</option>
+          <option value="medium" selected>&#x1F7E1; Medium</option>
+          <option value="low">&#x1F7E2; Low</option>
+        </select>
+        <button class="fb-save" onclick="addOverallComment()">Add Comment</button>
+      </div>
+    </div>
+  </div>
+  <div class="fb-comment-list" id="fbOverallComments"></div>
+</div>
+
+<!-- Future-State Banner -->
+<div class="illustrative-banner" style="font-size:11px;padding:8px 12px">
+  &#x26A0;&#xFE0F; <strong>FUTURE-STATE PROTOTYPE — NO LIVE DATA</strong>&nbsp; All metrics shown use illustrative data. Prerequisites: Oracle PO integration, GXO stock integration, Master Component Library, SiteFlo pipeline data.
+</div>
+
+<!-- Filters -->
+<div class="fb">
+  <span class="fl">Manufacturer</span><select><option>All</option><option>Nokia</option><option>Ericsson</option><option>Commscope</option><option>Eltek</option><option>Huawei</option><option>CU Phosco</option></select>
+  <span class="fl">Model Number</span><select><option>All</option><option>AHEGHA</option><option>AHPMDG 2</option><option>2238 ERS</option><option>FP2</option></select>
+  <span class="fl">Supplier</span><select><option>All</option><option>Nokia Networks</option><option>Ericsson Ltd</option><option>Commscope UK</option><option>Eltek Power</option><option>Huawei Tech</option><option>CU Phosco</option></select>
+  <span class="fl">Region</span><select><option>All</option><option>London</option><option>South</option><option>West</option><option>North</option></select>
+  <span class="fl">Date Range</span><input type="text" value="01 Jan 2026 — 08 Apr 2026" style="width:180px" readonly>
+</div>
+
+<!-- KPI Row -->
+<div class="krow k5" id="kpiRow"></div>
+
+<!-- Charts Row 1 -->
+<div class="cg2">
+  <div class="cc" id="cardForecast" data-visual-id="chart-forecast-vs-actual" data-visual-name="Forecast vs Actual Demand">
+    <h4>Forecast vs Actual Demand</h4>
+    <div style="position:relative;height:280px;overflow:hidden"><canvas id="chForecast"></canvas></div>
+    <div class="leg">
+      <div class="li"><div class="lsq" style="background:#1a2d4f"></div> Forecast</div>
+      <div class="li"><div class="lsq" style="background:#C8102E"></div> Actual</div>
+    </div>
+  </div>
+  <div class="cc" id="cardScorecard" data-visual-id="chart-supplier-scorecard" data-visual-name="Supplier Scorecard">
+    <h4>Supplier Scorecard — On-Time Delivery %</h4>
+    <div style="position:relative;height:280px;overflow:hidden"><canvas id="chScorecard"></canvas></div>
+  </div>
+</div>
+
+<!-- Charts Row 2 -->
+<div class="cg2">
+  <div class="cc" id="cardHeatmap" data-visual-id="chart-stock-heatmap" data-visual-name="Stock Levels by Equipment Type">
+    <h4>Stock Levels by Equipment Type</h4>
+    <div id="heatmapWrap"></div>
+    <div class="leg" style="margin-top:6px">
+      <div class="li"><div class="lsq" style="background:#dcfce7"></div> Low count</div>
+      <div class="li"><div class="lsq" style="background:#166534"></div> High count</div>
+      <div class="li"><div class="lsq" style="background:#C8102E"></div> Critical shortage</div>
+    </div>
+  </div>
+  <div class="cc" id="cardRegion" data-visual-id="chart-demand-region" data-visual-name="Demand Breakdown by Region">
+    <h4>Demand Breakdown by Region</h4>
+    <div style="position:relative;height:280px;overflow:hidden"><canvas id="chRegion"></canvas></div>
+    <div class="leg">
+      <div class="li"><div class="lsq" style="background:#1a2d4f"></div> Antennas</div>
+      <div class="li"><div class="lsq" style="background:#2a5f8f"></div> Radios</div>
+      <div class="li"><div class="lsq" style="background:#d97706"></div> Power Systems</div>
+      <div class="li"><div class="lsq" style="background:#C8102E"></div> Cabinets</div>
+      <div class="li"><div class="lsq" style="background:#166534"></div> Cabling</div>
+      <div class="li"><div class="lsq" style="background:#7c3aed"></div> Mounts</div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row 3 — PO Status Timeline (full width) -->
+<div class="cc full" id="cardTimeline" data-visual-id="chart-po-timeline" data-visual-name="PO Status Timeline" style="margin-bottom:12px">
+  <h4>PO Status Timeline</h4>
+  <div id="timelineWrap" style="max-height:420px;overflow-y:auto"></div>
+  <div class="leg" style="margin-top:6px">
+    <div class="li"><div class="lsq" style="background:#bbb"></div> Raised</div>
+    <div class="li"><div class="lsq" style="background:#2a5f8f"></div> Confirmed</div>
+    <div class="li"><div class="lsq" style="background:#d97706"></div> In Transit</div>
+    <div class="li"><div class="lsq" style="background:#166534"></div> Delivered</div>
+    <div class="li"><div class="lsq" style="background:#C8102E"></div> Overdue</div>
+  </div>
+</div>
+
+<!-- Table (full width) -->
+<div class="cc full" id="cardTable" data-visual-id="table-open-pos" data-visual-name="Open Purchase Orders" style="margin-bottom:12px">
+  <h4>Open Purchase Orders</h4>
+  <div style="overflow-x:auto">
+    <table id="tblPOs">
+      <thead>
+        <tr>
+          <th onclick="sortTable(0)">PO Number <span class="sort-arrow">&#x25B2;</span></th>
+          <th onclick="sortTable(1)">Supplier <span class="sort-arrow">&#x25B2;</span></th>
+          <th onclick="sortTable(2)">Equipment Type <span class="sort-arrow">&#x25B2;</span></th>
+          <th onclick="sortTable(3)">Model <span class="sort-arrow">&#x25B2;</span></th>
+          <th onclick="sortTable(4)">Qty <span class="sort-arrow">&#x25B2;</span></th>
+          <th onclick="sortTable(5)">Order Date <span class="sort-arrow">&#x25B2;</span></th>
+          <th onclick="sortTable(6)">Expected Delivery <span class="sort-arrow">&#x25B2;</span></th>
+          <th onclick="sortTable(7)">Status <span class="sort-arrow">&#x25B2;</span></th>
+          <th onclick="sortTable(8)">Days Remaining <span class="sort-arrow">&#x25B2;</span></th>
+        </tr>
+      </thead>
+      <tbody id="tblBody"></tbody>
+    </table>
+  </div>
+</div>
+
+</div><!-- /pg -->
+</div><!-- /dw -->
+
+<script>
+Chart.defaults.font.family='system-ui,-apple-system,sans-serif';
+Chart.defaults.font.size=10;
+Chart.defaults.color='#757575';
+
+/* ================================================================
+   MOCK DATA
+   ================================================================ */
+
+const poData = [
+  {po:'PO-20260101',supplier:'Nokia Networks',type:'Antennas',model:'AHEGHA',qty:120,orderDate:'2026-01-05',expected:'2026-02-02',status:'Delivered',daysRem:0},
+  {po:'PO-20260102',supplier:'Ericsson Ltd',type:'Radios',model:'2238 ERS',qty:85,orderDate:'2026-01-08',expected:'2026-02-10',status:'Delivered',daysRem:0},
+  {po:'PO-20260103',supplier:'Commscope UK',type:'Cabling',model:'HELIAX 1-5/8',qty:2400,orderDate:'2026-01-12',expected:'2026-02-15',status:'Delivered',daysRem:0},
+  {po:'PO-20260104',supplier:'Eltek Power',type:'Power Systems',model:'FP2 48V',qty:60,orderDate:'2026-01-15',expected:'2026-02-20',status:'Delivered',daysRem:0},
+  {po:'PO-20260105',supplier:'Nokia Networks',type:'Radios',model:'AHPMDG 2',qty:90,orderDate:'2026-01-20',expected:'2026-02-25',status:'Delivered',daysRem:0},
+  {po:'PO-20260106',supplier:'CU Phosco',type:'Mounts',model:'4.51 Headframe',qty:35,orderDate:'2026-01-22',expected:'2026-03-01',status:'Delivered',daysRem:0},
+  {po:'PO-20260201',supplier:'Huawei Tech',type:'Antennas',model:'ATR4518R8',qty:150,orderDate:'2026-02-03',expected:'2026-03-10',status:'Delivered',daysRem:0},
+  {po:'PO-20260202',supplier:'Nokia Networks',type:'Cabinets',model:'AMRC Rail Kit',qty:45,orderDate:'2026-02-10',expected:'2026-03-15',status:'In Transit',daysRem:3},
+  {po:'PO-20260203',supplier:'Ericsson Ltd',type:'Radios',model:'ERS 6201',qty:110,orderDate:'2026-02-14',expected:'2026-03-20',status:'Overdue',daysRem:-19},
+  {po:'PO-20260204',supplier:'Commscope UK',type:'Antennas',model:'RRVV-65B',qty:200,orderDate:'2026-02-18',expected:'2026-03-25',status:'Overdue',daysRem:-14},
+  {po:'PO-20260205',supplier:'Eltek Power',type:'Power Systems',model:'4th Gen PSU',qty:75,orderDate:'2026-02-22',expected:'2026-04-01',status:'Overdue',daysRem:-7},
+  {po:'PO-20260301',supplier:'Nokia Networks',type:'Antennas',model:'AHEGHA',qty:180,orderDate:'2026-03-01',expected:'2026-04-10',status:'In Transit',daysRem:2},
+  {po:'PO-20260302',supplier:'Huawei Tech',type:'Radios',model:'RRU5301',qty:95,orderDate:'2026-03-05',expected:'2026-04-15',status:'Confirmed',daysRem:7},
+  {po:'PO-20260303',supplier:'CU Phosco',type:'Mounts',model:'Phase 4.5 Monopole',qty:20,orderDate:'2026-03-10',expected:'2026-04-20',status:'Confirmed',daysRem:12},
+  {po:'PO-20260304',supplier:'Ericsson Ltd',type:'Cabinets',model:'EFF1 Cabinet',qty:30,orderDate:'2026-03-15',expected:'2026-04-25',status:'Raised',daysRem:17},
+];
+
+/* ================================================================
+   INFO TEXTS
+   ================================================================ */
+const infoTexts = {
+  kpiVolume: "Total equipment units across all active POs. Drives: demand planning visibility",
+  kpiBackorder: "Items backordered / total ordered. Drives: supplier escalation decisions",
+  kpiLeadTime: "Average supplier delivery lead time. Drives: procurement timeline planning",
+  kpiOnTime: "% POs delivered by target date. Drives: supplier performance assessment",
+  kpiOpenPOs: "Active purchase orders pending delivery. Drives: pipeline visibility",
+  forecastVsActual: "Compares planned demand with actual orders. Gap indicates forecast accuracy. Drives: adjusting order quantities to reduce over/under-ordering",
+  supplierScorecard: "Supplier delivery performance comparison. Drives: supplier selection and escalation decisions",
+  stockHeatmap: "Equipment stock status across categories. Red cells indicate critical shortages. Drives: urgent procurement actions. \u26a0\ufe0f Requires GXO stock integration",
+  demandRegion: "Regional equipment demand distribution. Drives: regional supply allocation",
+  poTimeline: "Visual timeline of purchase order progression. Red = overdue. Drives: identifying stalled orders for follow-up. \u26a0\ufe0f Requires Oracle PO integration",
+  openPOsTable: "All active purchase orders. Click row to expand. Drives: order-level tracking and supplier follow-up"
+};
+
+/* ================================================================
+   INFO ICON HELPERS
+   ================================================================ */
+function addInfoIcon(containerId, infoKey){
+  const container = document.getElementById(containerId);
+  if(!container) return;
+  const panelId = 'infoPanel_' + infoKey;
+  const btn = document.createElement('button');
+  btn.className = 'info-icon-btn';
+  btn.innerHTML = 'i';
+  btn.title = 'Show info';
+  btn.setAttribute('aria-label','Toggle information panel');
+  btn.onclick = function(e){
+    e.stopPropagation();
+    const panel = document.getElementById(panelId);
+    if(panel){
+      panel.classList.toggle('open');
+      btn.style.background = panel.classList.contains('open') ? '#e8f0fe' : '';
+      btn.style.color = panel.classList.contains('open') ? '#2a5f8f' : '';
+    }
+  };
+  container.appendChild(btn);
+  const panel = document.createElement('div');
+  panel.className = 'info-panel';
+  panel.id = panelId;
+  panel.textContent = infoTexts[infoKey] || '';
+  const h4 = container.querySelector('h4');
+  if(h4 && h4.nextSibling){
+    h4.parentNode.insertBefore(panel, h4.nextSibling);
+  } else {
+    container.appendChild(panel);
+  }
+}
+
+function addInfoIconToEl(el, infoKey){
+  if(!el) return;
+  el.style.position = 'relative';
+  const panelId = 'infoPanel_' + infoKey;
+  const btn = document.createElement('button');
+  btn.className = 'info-icon-btn';
+  btn.innerHTML = 'i';
+  btn.title = 'Show info';
+  btn.onclick = function(e){
+    e.stopPropagation();
+    const panel = document.getElementById(panelId);
+    if(panel){
+      panel.classList.toggle('open');
+      btn.style.background = panel.classList.contains('open') ? '#e8f0fe' : '';
+      btn.style.color = panel.classList.contains('open') ? '#2a5f8f' : '';
+    }
+  };
+  el.appendChild(btn);
+  const panel = document.createElement('div');
+  panel.className = 'info-panel';
+  panel.id = panelId;
+  panel.textContent = infoTexts[infoKey] || '';
+  el.appendChild(panel);
+}
+
+/* ================================================================
+   RENDER KPIs
+   ================================================================ */
+function renderKPIs(){
+  const row = document.getElementById('kpiRow');
+  row.innerHTML = `
+    <div class="kpi" id="kpiVolume" data-visual-id="kpi-equipment-volume" data-visual-name="Equipment Volume"><div class="kpi-lbl">Equipment Volume</div><div class="kpi-val">12,450</div><div class="kpi-sub">total units on order</div></div>
+    <div class="kpi amb" id="kpiBackorder" data-visual-id="kpi-backorder-rate" data-visual-name="Backorder Rate"><div class="kpi-lbl">Backorder Rate</div><div class="kpi-val">8.3%</div><div class="kpi-sub">items currently backordered</div></div>
+    <div class="kpi" id="kpiLeadTime" data-visual-id="kpi-avg-lead-time" data-visual-name="Avg Lead Time"><div class="kpi-lbl">Avg Lead Time</div><div class="kpi-val">18.2 <span style="font-size:12px;font-weight:400">days</span></div><div class="kpi-sub">PO to delivery average</div></div>
+    <div class="kpi amb" id="kpiOnTime" data-visual-id="kpi-on-time-delivery" data-visual-name="On-Time Delivery"><div class="kpi-lbl">On-Time Delivery</div><div class="kpi-val">76%</div><div class="kpi-sub">delivered on schedule</div></div>
+    <div class="kpi" id="kpiOpenPOs" data-visual-id="kpi-open-pos" data-visual-name="Open POs"><div class="kpi-lbl">Open POs</div><div class="kpi-val">342</div><div class="kpi-sub">active purchase orders</div></div>
+  `;
+  addInfoIconToEl(document.getElementById('kpiVolume'), 'kpiVolume');
+  addInfoIconToEl(document.getElementById('kpiBackorder'), 'kpiBackorder');
+  addInfoIconToEl(document.getElementById('kpiLeadTime'), 'kpiLeadTime');
+  addInfoIconToEl(document.getElementById('kpiOnTime'), 'kpiOnTime');
+  addInfoIconToEl(document.getElementById('kpiOpenPOs'), 'kpiOpenPOs');
+}
+
+/* ================================================================
+   CHART: Forecast vs Actual Demand
+   ================================================================ */
+function renderForecastChart(){
+  const labels = ['W1','W2','W3','W4','W5','W6','W7','W8','W9','W10','W11','W12'];
+  const forecast = [1100,1050,1200,1150,1300,1250,1350,1400,1300,1450,1500,1550];
+  const actual =   [980,1020,1100,1080,1220,1180,1280,1320,1250,1380,1420,1470];
+  new Chart(document.getElementById('chForecast'),{
+    type:'line',
+    data:{labels, datasets:[
+      {label:'Forecast',data:forecast,borderColor:'#1a2d4f',backgroundColor:'rgba(26,45,79,0.08)',fill:true,tension:0.3,pointRadius:3,pointBackgroundColor:'#1a2d4f',borderWidth:2},
+      {label:'Actual',data:actual,borderColor:'#C8102E',backgroundColor:'rgba(200,16,46,0.05)',fill:true,tension:0.3,pointRadius:3,pointBackgroundColor:'#C8102E',borderWidth:2}
+    ]},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'#f1f3f4'},title:{display:true,text:'Units'}}}}
+  });
+}
+
+/* ================================================================
+   CHART: Supplier Scorecard
+   ================================================================ */
+function renderScorecardChart(){
+  const suppliers = ['CU Phosco','Huawei','Eltek','Commscope','Ericsson','Nokia'];
+  const scores = [62, 68, 78, 82, 88, 92];
+  const colors = scores.map(s => s >= 85 ? '#166534' : s >= 70 ? '#d97706' : '#C8102E');
+  new Chart(document.getElementById('chScorecard'),{
+    type:'bar',
+    data:{labels:suppliers, datasets:[{
+      data:scores,
+      backgroundColor:colors,
+      borderRadius:3,
+      barThickness:22
+    }]},
+    options:{
+      maintainAspectRatio:false,
+      indexAxis:'y',
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>ctx.raw+'% on-time'}}
+      },
+      scales:{
+        x:{grid:{color:'#f1f3f4'},min:0,max:100,title:{display:true,text:'On-Time Delivery %'},ticks:{callback:v=>v+'%'}},
+        y:{grid:{display:false}}
+      }
+    }
+  });
+}
+
+/* ================================================================
+   HEATMAP: Stock Levels by Equipment Type
+   ================================================================ */
+function renderHeatmap(){
+  const categories = ['Antennas','Radios','Power Systems','Cabinets','Cabling','Mounts'];
+  const columns = ['In Stock','On Order','Backordered'];
+  const data = [
+    [320, 450, 35],
+    [180, 380, 22],
+    [95,  210, 48],
+    [140, 120, 8],
+    [2800, 1600, 15],
+    [65,  85,  12]
+  ];
+
+  const wrap = document.getElementById('heatmapWrap');
+  // Header row
+  let html = '<div class="heatmap-grid" style="grid-template-columns:120px repeat(3,1fr)">';
+  html += '<div class="hm-cell" style="font-weight:500;color:var(--color-text-secondary)"></div>';
+  columns.forEach(c => { html += '<div class="hm-cell" style="font-weight:500;color:var(--color-text-secondary)">'+c+'</div>'; });
+
+  // Find max for each column for color scaling
+  const colMaxes = [0,0,0];
+  data.forEach(row => row.forEach((v,ci) => { if(v > colMaxes[ci]) colMaxes[ci] = v; }));
+
+  data.forEach((row, ri) => {
+    html += '<div class="hm-cell" style="font-weight:500;color:var(--color-text-primary);text-align:left;font-size:11px">'+categories[ri]+'</div>';
+    row.forEach((val, ci) => {
+      let bg, color;
+      if(ci === 2){ // Backordered column
+        const intensity = Math.min(val / 50, 1);
+        if(intensity > 0.5){
+          bg = '#C8102E'; color = '#fff';
+        } else if(intensity > 0.2){
+          bg = '#fef3c7'; color = '#92400e';
+        } else {
+          bg = '#dcfce7'; color = '#166534';
+        }
+      } else {
+        const intensity = colMaxes[ci] > 0 ? val / colMaxes[ci] : 0;
+        const r = Math.round(220 - intensity * 186);
+        const g = Math.round(252 - intensity * 151);
+        const b = Math.round(231 - intensity * 180);
+        bg = 'rgb('+r+','+g+','+b+')';
+        color = intensity > 0.6 ? '#fff' : '#166534';
+      }
+      html += '<div class="hm-cell" style="background:'+bg+';color:'+color+';font-weight:500">'+val.toLocaleString()+'</div>';
+    });
+  });
+  html += '</div>';
+  wrap.innerHTML = html;
+}
+
+/* ================================================================
+   CHART: Demand Breakdown by Region
+   ================================================================ */
+function renderRegionChart(){
+  const regions = ['London','South','West','North'];
+  new Chart(document.getElementById('chRegion'),{
+    type:'bar',
+    data:{labels:regions, datasets:[
+      {label:'Antennas',data:[420,680,350,290],backgroundColor:'#1a2d4f'},
+      {label:'Radios',data:[380,550,310,240],backgroundColor:'#2a5f8f'},
+      {label:'Power Systems',data:[210,340,180,150],backgroundColor:'#d97706'},
+      {label:'Cabinets',data:[95,140,80,65],backgroundColor:'#C8102E'},
+      {label:'Cabling',data:[680,1100,520,440],backgroundColor:'#166534'},
+      {label:'Mounts',data:[45,70,35,30],backgroundColor:'#7c3aed'}
+    ]},
+    options:{
+      maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{grid:{display:false},stacked:true},
+        y:{grid:{color:'#f1f3f4'},stacked:true,title:{display:true,text:'Units'}}
+      }
+    }
+  });
+}
+
+/* ================================================================
+   PO STATUS TIMELINE
+   ================================================================ */
+function renderTimeline(){
+  const timelinePOs = [
+    {po:'PO-20260101',status:'Delivered',start:0,end:28,color:'#166534'},
+    {po:'PO-20260102',status:'Delivered',start:3,end:35,color:'#166534'},
+    {po:'PO-20260103',status:'Delivered',start:7,end:40,color:'#166534'},
+    {po:'PO-20260104',status:'Delivered',start:10,end:45,color:'#166534'},
+    {po:'PO-20260105',status:'Delivered',start:15,end:50,color:'#166534'},
+    {po:'PO-20260106',status:'Delivered',start:17,end:55,color:'#166534'},
+    {po:'PO-20260201',status:'Delivered',start:29,end:64,color:'#166534'},
+    {po:'PO-20260202',status:'In Transit',start:36,end:74,color:'#d97706'},
+    {po:'PO-20260203',status:'Overdue',start:40,end:79,color:'#C8102E'},
+    {po:'PO-20260204',status:'Overdue',start:44,end:83,color:'#C8102E'},
+    {po:'PO-20260205',status:'Overdue',start:48,end:86,color:'#C8102E'},
+    {po:'PO-20260301',status:'In Transit',start:55,end:95,color:'#d97706'},
+    {po:'PO-20260302',status:'Confirmed',start:59,end:100,color:'#2a5f8f'},
+    {po:'PO-20260303',status:'Confirmed',start:64,end:105,color:'#2a5f8f'},
+    {po:'PO-20260304',status:'Raised',start:69,end:110,color:'#bbb'},
+  ];
+
+  const totalDays = 115;
+  const wrap = document.getElementById('timelineWrap');
+
+  // Week headers
+  let weekHtml = '<div style="display:flex;margin-bottom:4px;margin-left:88px">';
+  for(let w=0; w<16; w++){
+    weekHtml += '<div style="flex:1;font-size:9px;color:var(--color-text-secondary);text-align:center;min-width:0">W'+(w+1)+'</div>';
+  }
+  weekHtml += '</div>';
+
+  let html = weekHtml;
+  timelinePOs.forEach(t => {
+    const left = (t.start / totalDays * 100).toFixed(1);
+    const width = ((t.end - t.start) / totalDays * 100).toFixed(1);
+    const statusPill = t.status === 'Overdue' ? 'pr' : t.status === 'In Transit' ? 'pa' : t.status === 'Delivered' ? 'pg2' : t.status === 'Confirmed' ? 'pb' : 'pn';
+    html += '<div class="gantt-row">' +
+      '<div class="gantt-label">' + t.po + '</div>' +
+      '<div class="gantt-bar-wrap">' +
+        '<div class="gantt-bar" style="left:'+left+'%;width:'+width+'%;background:'+t.color+'"></div>' +
+      '</div>' +
+      '<div class="gantt-status"><span class="pill '+statusPill+'">'+t.status+'</span></div>' +
+    '</div>';
+  });
+  wrap.innerHTML = html;
+}
+
+/* ================================================================
+   TABLE: Open Purchase Orders
+   ================================================================ */
+function renderTable(){
+  const tb = document.getElementById('tblBody');
+  tb.innerHTML = poData.map((p, i) => {
+    const statusClass = p.status === 'Overdue' ? 'pr' : p.status === 'In Transit' ? 'pa' : p.status === 'Delivered' ? 'pg2' : p.status === 'Confirmed' ? 'pb' : 'pn';
+    const daysStr = p.status === 'Delivered' ? '<span style="color:#166534">Delivered</span>' :
+                    p.daysRem < 0 ? '<span style="color:#C8102E;font-weight:500">' + p.daysRem + ' days</span>' :
+                    p.daysRem + ' days';
+    return '<tr class="expand-toggle" onclick="toggleExpand('+i+')">' +
+      '<td>' + p.po + '</td>' +
+      '<td>' + p.supplier + '</td>' +
+      '<td>' + p.type + '</td>' +
+      '<td>' + p.model + '</td>' +
+      '<td>' + p.qty.toLocaleString() + '</td>' +
+      '<td>' + p.orderDate + '</td>' +
+      '<td>' + p.expected + '</td>' +
+      '<td><span class="pill ' + statusClass + '">' + p.status + '</span></td>' +
+      '<td>' + daysStr + '</td>' +
+    '</tr>' +
+    '<tr class="expand-row" id="expand_'+i+'">' +
+      '<td colspan="9"><div class="expand-content">' +
+        '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">' +
+          '<div><strong>Supplier Contact:</strong> procurement@' + p.supplier.toLowerCase().replace(/\s/g,'') + '.com</div>' +
+          '<div><strong>Delivery Address:</strong> VMO2 Warehouse, ' + ['London','Birmingham','Manchester','Bristol'][i%4] + '</div>' +
+          '<div><strong>Notes:</strong> ' + (p.status === 'Overdue' ? 'Escalation raised with supplier. Awaiting revised ETA.' : p.status === 'In Transit' ? 'Shipment tracking confirmed. On schedule.' : 'Standard processing.') + '</div>' +
+        '</div>' +
+      '</div></td>' +
+    '</tr>';
+  }).join('');
+}
+
+function toggleExpand(i){
+  const row = document.getElementById('expand_'+i);
+  if(row) row.classList.toggle('open');
+}
+
+/* Table sorting */
+let sortCol = -1, sortAsc = true;
+function sortTable(col){
+  if(sortCol === col) sortAsc = !sortAsc;
+  else { sortCol = col; sortAsc = true; }
+
+  const keys = ['po','supplier','type','model','qty','orderDate','expected','status','daysRem'];
+  const key = keys[col];
+  poData.sort((a,b) => {
+    let va = a[key], vb = b[key];
+    if(typeof va === 'string') va = va.toLowerCase();
+    if(typeof vb === 'string') vb = vb.toLowerCase();
+    if(va < vb) return sortAsc ? -1 : 1;
+    if(va > vb) return sortAsc ? 1 : -1;
+    return 0;
+  });
+  renderTable();
+}
+
+/* ================================================================
+   ADD INFO ICONS TO ALL VISUALS
+   ================================================================ */
+function addAllInfoIcons(){
+  addInfoIcon('cardForecast','forecastVsActual');
+  addInfoIcon('cardScorecard','supplierScorecard');
+  addInfoIcon('cardHeatmap','stockHeatmap');
+  addInfoIcon('cardRegion','demandRegion');
+  addInfoIcon('cardTimeline','poTimeline');
+  addInfoIcon('cardTable','openPOsTable');
+}
+
+/* ================================================================
+   INIT
+   ================================================================ */
+renderKPIs();
+renderForecastChart();
+renderScorecardChart();
+renderHeatmap();
+renderRegionChart();
+renderTimeline();
+renderTable();
+addAllInfoIcons();
+
+/* ================================================================
+   FEEDBACK SYSTEM
+   ================================================================ */
+const DASHBOARD_ID = 'US4';
+const DASHBOARD_VERSION = '1.0';
+const FEEDBACK_EMAIL = 'marta@inferencegroup.com';
+
+let feedbackData = {
+  dashboard: DASHBOARD_ID,
+  version: DASHBOARD_VERSION,
+  reviewer: '',
+  date: new Date().toISOString().split('T')[0],
+  overall: [],
+  visuals: []
+};
+
+function loadFeedback(){
+  const saved = localStorage.getItem('fb_' + DASHBOARD_ID);
+  if(saved){
+    try{ feedbackData = JSON.parse(saved); } catch(e){}
+  }
+  renderOverallComments();
+  updateBubbles();
+  updateCount();
+}
+
+function saveFeedback(){
+  localStorage.setItem('fb_' + DASHBOARD_ID, JSON.stringify(feedbackData));
+  updateCount();
+}
+
+function toggleFeedbackMode(){
+  document.body.classList.toggle('feedback-mode');
+  const btn = document.querySelector('.fb-toggle');
+  btn.classList.toggle('active');
+  btn.textContent = document.body.classList.contains('feedback-mode') ? '\u2715 Exit Feedback' : '\uD83D\uDCAC Feedback';
+}
+
+function initFeedbackBubbles(){
+  document.querySelectorAll('[data-visual-id]').forEach(el => {
+    if(el.querySelector('.fb-bubble')) return;
+    el.style.position = 'relative';
+    const bubble = document.createElement('button');
+    bubble.className = 'fb-bubble';
+    bubble.innerHTML = '\uD83D\uDCAC';
+    bubble.title = 'Add feedback for: ' + (el.dataset.visualName || el.dataset.visualId);
+    bubble.onclick = function(e){
+      e.stopPropagation();
+      openFeedbackPanel(el);
+    };
+    el.appendChild(bubble);
+  });
+}
+
+function openFeedbackPanel(el){
+  document.querySelectorAll('.fb-input-panel.open').forEach(p => p.classList.remove('open'));
+  let panel = el.querySelector('.fb-input-panel');
+  if(!panel){
+    panel = document.createElement('div');
+    panel.className = 'fb-input-panel';
+    const vid = el.dataset.visualId;
+    const vname = el.dataset.visualName || vid;
+    const tab = el.closest('[data-tab]')?.dataset.tab || 'Unknown';
+    const existing = feedbackData.visuals.filter(v => v.id === vid);
+    let existingHtml = '';
+    if(existing.length > 0){
+      existingHtml = '<div class="fb-existing"><strong>Existing comments:</strong><br>' +
+        existing.map((c,i) => '\u2022 [' + c.priority + '] ' + c.type + ': ' + c.comment + ' <button class="fb-remove-comment" onclick="removeVisualComment(\'' + vid + '\',' + i + ',\'' + tab + '\');this.closest(\'.fb-input-panel\').classList.remove(\'open\');">\u2715</button>').join('<br>') +
+        '</div>';
+    }
+    panel.innerHTML =
+      '<div style="font-weight:600;margin-bottom:6px;font-size:12px">' + vname + '</div>' +
+      '<div style="color:#757575;margin-bottom:6px">Tab: ' + tab + '</div>' +
+      existingHtml +
+      '<textarea id="fbInput_' + vid + '" placeholder="What should change about this visual?"></textarea>' +
+      '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">' +
+        '<select id="fbType_' + vid + '">' +
+          '<option value="change">\u270F\uFE0F Change</option>' +
+          '<option value="remove">\uD83D\uDDD1\uFE0F Remove</option>' +
+          '<option value="add">\u2795 Add new</option>' +
+          '<option value="question">\u2753 Question</option>' +
+          '<option value="approve">\u2705 Approve</option>' +
+        '</select>' +
+        '<select id="fbPriority_' + vid + '">' +
+          '<option value="high">\uD83D\uDD34 High</option>' +
+          '<option value="medium" selected>\uD83D\uDFE1 Medium</option>' +
+          '<option value="low">\uD83D\uDFE2 Low</option>' +
+        '</select>' +
+        '<button class="fb-cancel" onclick="this.closest(\'.fb-input-panel\').classList.remove(\'open\')">Cancel</button>' +
+        '<button class="fb-save" onclick="saveVisualComment(\'' + vid + '\',\'' + vname + '\',\'' + tab + '\')">Save</button>' +
+      '</div>';
+    el.appendChild(panel);
+  } else {
+    const vid = el.dataset.visualId;
+    const existing = feedbackData.visuals.filter(v => v.id === vid);
+    const existingDiv = panel.querySelector('.fb-existing');
+    if(existing.length > 0){
+      const html = '<div class="fb-existing"><strong>Existing comments:</strong><br>' +
+        existing.map((c,i) => '\u2022 [' + c.priority + '] ' + c.type + ': ' + c.comment + ' <button class="fb-remove-comment" onclick="removeVisualComment(\'' + vid + '\',' + i + ',\'' + (el.closest('[data-tab]')?.dataset.tab||'Unknown') + '\');this.closest(\'.fb-input-panel\').classList.remove(\'open\');">\u2715</button>').join('<br>') +
+        '</div>';
+      if(existingDiv) existingDiv.outerHTML = html;
+      else panel.querySelector('textarea').insertAdjacentHTML('beforebegin', html);
+    } else if(existingDiv){
+      existingDiv.remove();
+    }
+  }
+  panel.classList.add('open');
+}
+
+function saveVisualComment(id, name, tab){
+  const comment = document.getElementById('fbInput_' + id)?.value.trim();
+  if(!comment) return;
+  feedbackData.visuals.push({
+    id: id, name: name, tab: tab,
+    type: document.getElementById('fbType_' + id)?.value || 'change',
+    comment: comment,
+    priority: document.getElementById('fbPriority_' + id)?.value || 'medium'
+  });
+  saveFeedback();
+  updateBubbles();
+  const input = document.getElementById('fbInput_' + id);
+  if(input) input.value = '';
+  document.querySelectorAll('.fb-input-panel.open').forEach(p => p.classList.remove('open'));
+}
+
+function removeVisualComment(id, index, tab){
+  const matching = feedbackData.visuals.filter(v => v.id === id);
+  if(matching[index]){
+    const globalIndex = feedbackData.visuals.indexOf(matching[index]);
+    feedbackData.visuals.splice(globalIndex, 1);
+    saveFeedback();
+    updateBubbles();
+  }
+}
+
+function updateBubbles(){
+  document.querySelectorAll('[data-visual-id]').forEach(el => {
+    const vid = el.dataset.visualId;
+    const bubble = el.querySelector('.fb-bubble');
+    if(!bubble) return;
+    const count = feedbackData.visuals.filter(v => v.id === vid).length;
+    bubble.classList.toggle('has-comment', count > 0);
+    const oldBadge = bubble.querySelector('.fb-badge');
+    if(oldBadge) oldBadge.remove();
+    if(count > 0){
+      const badge = document.createElement('span');
+      badge.className = 'fb-badge';
+      badge.textContent = count;
+      bubble.appendChild(badge);
+    }
+  });
+}
+
+function addOverallComment(){
+  const input = document.getElementById('fbOverallInput');
+  const priority = document.getElementById('fbOverallPriority');
+  if(!input || !input.value.trim()) return;
+  feedbackData.overall.push({
+    comment: input.value.trim(),
+    priority: priority?.value || 'medium'
+  });
+  saveFeedback();
+  renderOverallComments();
+  input.value = '';
+}
+
+function renderOverallComments(){
+  const container = document.getElementById('fbOverallComments');
+  if(!container) return;
+  container.innerHTML = feedbackData.overall.map((c, i) =>
+    '<div class="fb-comment-item">' +
+      '<div>' +
+        '<div class="fb-comment-text">' + c.comment + '</div>' +
+        '<div class="fb-comment-meta">' + (c.priority === 'high' ? '\uD83D\uDD34' : c.priority === 'medium' ? '\uD83D\uDFE1' : '\uD83D\uDFE2') + ' ' + c.priority + ' priority</div>' +
+      '</div>' +
+      '<button class="fb-remove-comment" onclick="removeOverallComment(' + i + ')">\u2715</button>' +
+    '</div>'
+  ).join('');
+}
+
+function removeOverallComment(index){
+  feedbackData.overall.splice(index, 1);
+  saveFeedback();
+  renderOverallComments();
+}
+
+function updateCount(){
+  const el = document.getElementById('fbCount');
+  if(el) el.textContent = feedbackData.overall.length + feedbackData.visuals.length;
+}
+
+function exportFeedback(){
+  feedbackData.reviewer = prompt('Your name:') || 'Anonymous';
+  feedbackData.date = new Date().toISOString().split('T')[0];
+  const json = JSON.stringify(feedbackData, null, 2);
+  const commentCount = feedbackData.overall.length + feedbackData.visuals.length;
+
+  fetch('/api/feedback', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: json
+  })
+  .then(r => r.json())
+  .then(data => {
+    if(data.success){
+      showSubmitSuccess(commentCount, feedbackData.reviewer);
+      feedbackData.overall = [];
+      feedbackData.visuals = [];
+      saveFeedback();
+      renderOverallComments();
+      updateBubbles();
+    }
+  })
+  .catch(() => {
+    showSubmitSuccess(commentCount, feedbackData.reviewer);
+  });
+}
+
+function showSubmitSuccess(count, reviewer){
+  let modal = document.getElementById('fbFallbackModal');
+  if(modal) modal.remove();
+  modal = document.createElement('div');
+  modal.id = 'fbFallbackModal';
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:10000;display:flex;align-items:flex-start;justify-content:center;padding-top:60px';
+  modal.innerHTML =
+    '<div style="background:#fff;border-radius:12px;padding:36px;max-width:420px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.2);font-family:system-ui,sans-serif;text-align:center">' +
+    '<div style="width:56px;height:56px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px">✓</div>' +
+    '<h3 style="font-size:18px;color:#1a2d4f;margin-bottom:8px">Feedback Submitted</h3>' +
+    '<p style="font-size:13px;color:#757575;margin-bottom:6px">' + count + ' comment' + (count!==1?'s':'') + ' from <strong>' + reviewer + '</strong></p>' +
+    '<p style="font-size:12px;color:#757575;margin-bottom:24px">The team will review your comments and get back to you with any questions or updates.</p>' +
+    '<button onclick="document.getElementById(\'fbFallbackModal\').remove()" style="background:#1a2d4f;color:#fff;border:none;padding:10px 28px;border-radius:6px;cursor:pointer;font-size:13px;font-family:inherit">Done</button>' +
+    '</div>';
+  modal.onclick = function(e){ if(e.target === modal) modal.remove(); };
+  document.body.appendChild(modal);
+}
+
+function startStatusPolling(){
+  const dashId = DASHBOARD_ID;
+  const poll = setInterval(() => {
+    fetch('/api/status/' + dashId)
+    .then(r => r.json())
+    .then(status => {
+      if(status.status === 'complete'){
+        clearInterval(poll);
+        showStatusBanner('success', 'Dashboard updated to v' + (status.version || 'new') + '! Refresh to see changes.');
+        // Add refresh button
+        const banner = document.getElementById('statusBanner');
+        if(banner){
+          const btn = document.createElement('button');
+          btn.textContent = 'Refresh Dashboard';
+          btn.style.cssText = 'margin-left:12px;padding:4px 12px;border:none;border-radius:4px;background:#1a2d4f;color:#fff;cursor:pointer;font-size:11px';
+          btn.onclick = () => location.reload();
+          banner.appendChild(btn);
+        }
+      } else if(status.status === 'questions_pending'){
+        clearInterval(poll);
+        showStatusBanner('warning', 'Claude has clarifying questions before applying changes.');
+        loadQuestions();
+      } else if(status.status === 'error'){
+        clearInterval(poll);
+        showStatusBanner('error', 'Error: ' + (status.message || 'Processing failed'));
+      }
+      // else still processing, keep polling
+    })
+    .catch(() => clearInterval(poll));
+  }, 3000); // Poll every 3 seconds
+}
+
+function showStatusBanner(type, message){
+  let banner = document.getElementById('statusBanner');
+  if(!banner){
+    banner = document.createElement('div');
+    banner.id = 'statusBanner';
+    // Insert after topbar
+    const topbar = document.querySelector('.topbar');
+    topbar.parentNode.insertBefore(banner, topbar.nextSibling);
+  }
+  const colors = {
+    success: {bg:'#dcfce7',border:'#166534',text:'#166534'},
+    warning: {bg:'#fef3c7',border:'#d97706',text:'#92400e'},
+    error: {bg:'#fee2e2',border:'#991b1b',text:'#991b1b'},
+    info: {bg:'#e0f2fe',border:'#0284c7',text:'#0369a1'}
+  };
+  const c = colors[type] || colors.info;
+  banner.style.cssText = 'padding:10px 18px;font-size:12px;display:flex;align-items:center;gap:8px;background:'+c.bg+';border-bottom:2px solid '+c.border+';color:'+c.text;
+  banner.innerHTML = message;
+}
+
+function loadQuestions(){
+  fetch('/api/questions/' + DASHBOARD_ID)
+  .then(r => r.json())
+  .then(data => {
+    if(data.questions && data.questions.length > 0){
+      showQuestionsPanel(data.questions);
+    }
+  })
+  .catch(() => {});
+}
+
+function showQuestionsPanel(questions){
+  let panel = document.getElementById('questionsPanel');
+  if(!panel){
+    panel = document.createElement('div');
+    panel.id = 'questionsPanel';
+    panel.style.cssText = 'background:#fffbeb;border:1px solid #f59e0b;border-radius:8px;padding:16px 20px;margin:14px;font-size:12px';
+    const exportBar = document.querySelector('.fb-export-bar');
+    if(exportBar) exportBar.parentNode.insertBefore(panel, exportBar.nextSibling);
+    else document.querySelector('.topbar').parentNode.insertBefore(panel, document.querySelector('.topbar').nextSibling.nextSibling);
+  }
+
+  panel.innerHTML = '<h4 style="color:#92400e;margin-bottom:12px;font-size:14px">Clarifying Questions from Claude</h4>' +
+    '<p style="color:#78350f;margin-bottom:12px">Please answer these questions so changes can be applied:</p>' +
+    questions.map((q, i) =>
+      '<div style="background:#fff;border:1px solid #e0e0e0;border-radius:6px;padding:10px;margin-bottom:8px">' +
+      '<div style="font-weight:600;margin-bottom:4px">Q' + (i+1) + ': ' + q.question + '</div>' +
+      (q.context ? '<div style="color:#757575;font-size:11px;margin-bottom:6px">Context: ' + q.context + '</div>' : '') +
+      '<textarea id="answer_' + i + '" placeholder="Your answer..." style="width:100%;border:1px solid #e0e0e0;border-radius:4px;padding:6px;font-size:11px;font-family:inherit;min-height:40px;margin-top:4px"></textarea>' +
+      '</div>'
+    ).join('') +
+    '<button onclick="submitAnswers(' + questions.length + ')" style="background:#1a2d4f;color:#fff;border:none;padding:8px 20px;border-radius:4px;cursor:pointer;font-size:12px;margin-top:8px">Submit Answers</button>';
+}
+
+function submitAnswers(count){
+  const answers = [];
+  for(let i = 0; i < count; i++){
+    const el = document.getElementById('answer_' + i);
+    answers.push(el ? el.value.trim() : '');
+  }
+
+  fetch('/api/answers', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      dashboard: DASHBOARD_ID,
+      answers: answers,
+      date: new Date().toISOString().split('T')[0]
+    })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if(data.success){
+      const panel = document.getElementById('questionsPanel');
+      if(panel) panel.remove();
+      showStatusBanner('success', 'Answers submitted! Claude is applying changes...');
+      startStatusPolling();
+    }
+  })
+  .catch(() => {
+    showStatusBanner('error', 'Could not submit answers. Please try again.');
+  });
+}
+
+function clearAllFeedback(){
+  if(!confirm('Clear all feedback comments?')) return;
+  feedbackData.overall = [];
+  feedbackData.visuals = [];
+  saveFeedback();
+  renderOverallComments();
+  updateBubbles();
+}
+
+// Initialise feedback on page load
+document.addEventListener('DOMContentLoaded', function(){
+  initFeedbackBubbles();
+  loadFeedback();
+  // Check for pending questions on load
+  fetch('/api/questions/' + DASHBOARD_ID).then(r=>r.json()).then(d=>{
+    if(d.questions && d.questions.length>0) {
+      document.body.classList.add('feedback-mode');
+      document.querySelector('.fb-toggle').classList.add('active');
+      document.querySelector('.fb-toggle').textContent = '\u2715 Exit Feedback';
+      showStatusBanner('warning','Claude has clarifying questions. Please answer below.');
+      showQuestionsPanel(d.questions);
+    }
+  }).catch(()=>{});
+});
+</script>
+</body>
+</html>

@@ -205,6 +205,11 @@ function getDashboardFilename(id) {
     US1: 'US1_component_change_impact.html',
     US2: 'US2_nonstandard_design_detection.html',
     US3: 'US3_design_trend_analysis.html',
+    US4: 'US4_purchasing_equipment_pipeline.html',
+    US5: 'US5_equipment_recovery_inventory.html',
+    US6: 'US6_recovery_forecasting.html',
+    US7: 'US7_qs_cost_validation.html',
+    US8: 'US8_transmission_planning.html',
   };
   return map[id] || `${id}.html`;
 }
