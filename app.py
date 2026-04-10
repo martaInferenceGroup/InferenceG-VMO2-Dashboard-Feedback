@@ -413,6 +413,39 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# ─── Client Authentication Gate ─────────────────────────────────────────────────
+# Everyone must enter the client password to access the app.
+# The Reviewer Panel has its own additional password on top of this.
+
+try:
+    client_pw = st.secrets["client_password"]
+except Exception:
+    client_pw = "vmo2-client-2026"
+
+if "client_auth" not in st.session_state:
+    st.session_state.client_auth = False
+
+if not st.session_state.client_auth:
+    st.markdown("""
+    <div style="background:#1a2d4f;margin:-1rem -1rem 0 -1rem;padding:20px 24px">
+      <span style="color:#fff;font-size:18px;font-weight:600">VMO2 Dashboards</span>
+      <span style="color:rgba(255,255,255,.5);font-size:12px;margin-left:12px">Review & Feedback Platform</span>
+    </div>
+    """, unsafe_allow_html=True)
+    st.markdown("")
+    col_l, col_m, col_r = st.columns([1, 2, 1])
+    with col_m:
+        st.markdown("### Sign In")
+        st.markdown("Enter the access password provided by the Inference Group team.")
+        pw_input = st.text_input("Password", type="password", key="client_pw_input")
+        if st.button("Sign In", type="primary"):
+            if pw_input == client_pw:
+                st.session_state.client_auth = True
+                st.rerun()
+            else:
+                st.error("Incorrect password.")
+    st.stop()
+
 # ─── Top Navigation Bar (navy background, white text) ──────────────────────────
 
 st.markdown("""
