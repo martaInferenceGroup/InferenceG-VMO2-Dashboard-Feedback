@@ -414,16 +414,25 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ─── Client Authentication Gate ─────────────────────────────────────────────────
-# Everyone must enter the client password to access the app.
-# The Reviewer Panel has its own additional password on top of this.
+# Auth persists in browser sessionStorage so it survives page reloads
+# (e.g. after feedback submission). Only asks once per browser session.
 
 try:
     client_pw = st.secrets["client_password"]
 except Exception:
     client_pw = "vmo2-client-2026"
 
+# Check browser sessionStorage for existing auth (survives reloads)
+browser_auth = streamlit_js_eval(
+    js_expressions="""(function(){
+        try { return window.parent.sessionStorage.getItem('vmo2_auth') || sessionStorage.getItem('vmo2_auth'); }
+        catch(e) { return sessionStorage.getItem('vmo2_auth'); }
+    })()""",
+    key="check_auth",
+)
+
 if "client_auth" not in st.session_state:
-    st.session_state.client_auth = False
+    st.session_state.client_auth = (browser_auth == "true")
 
 if not st.session_state.client_auth:
     st.markdown("""
@@ -441,6 +450,15 @@ if not st.session_state.client_auth:
         if st.button("Sign In", type="primary"):
             if pw_input == client_pw:
                 st.session_state.client_auth = True
+                # Persist to browser sessionStorage (survives reloads, clears when tab/browser closes)
+                streamlit_js_eval(
+                    js_expressions="""(function(){
+                        try { window.parent.sessionStorage.setItem('vmo2_auth', 'true'); }
+                        catch(e) { sessionStorage.setItem('vmo2_auth', 'true'); }
+                        return 'ok';
+                    })()""",
+                    key="set_auth",
+                )
                 st.rerun()
             else:
                 st.error("Incorrect password.")
