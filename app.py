@@ -33,9 +33,10 @@ for d in [FEEDBACK_DIR, QUESTIONS_DIR, STATUS_DIR, STORIES_DIR, LOGOS_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
 DASHBOARDS = {
-    "US1": {
-        "file": "US1_component_change_impact.html",
+    "CO1": {
+        "file": "CO1_component_change_impact.html",
         "title": "Component Change Impact Assessment",
+        "role": "Central Ops",
         "visuals": [
             "Overall Dashboard",
             "KPI — Avg Changes per Site",
@@ -53,9 +54,10 @@ DASHBOARDS = {
             "All Submissions Table",
         ],
     },
-    "US2": {
-        "file": "US2_nonstandard_design_detection.html",
+    "CO2": {
+        "file": "CO2_nonstandard_design_detection.html",
         "title": "Non-Standard Design Detection",
+        "role": "Central Ops",
         "visuals": [
             "Overall Dashboard",
             "KPI — Design Guide Adherence",
@@ -69,9 +71,10 @@ DASHBOARDS = {
             "Supplier Performance Summary Table",
         ],
     },
-    "US3": {
-        "file": "US3_design_trend_analysis.html",
+    "CO3": {
+        "file": "CO3_design_trend_analysis.html",
         "title": "Design Trend & Issue Analysis",
+        "role": "Central Ops",
         "visuals": [
             "Overall Dashboard",
             "KPI — MSV Failure Rate",
@@ -86,9 +89,10 @@ DASHBOARDS = {
             "Delay Days by Issue Category",
         ],
     },
-    "US4": {
-        "file": "US4_purchasing_equipment_pipeline.html",
+    "P1": {
+        "file": "P1_purchasing_equipment_pipeline.html",
         "title": "Purchasing Equipment Pipeline",
+        "role": "Purchasing",
         "visuals": [
             "Overall Dashboard",
             "KPI — Equipment Volume",
@@ -104,9 +108,10 @@ DASHBOARDS = {
             "Open Purchase Orders",
         ],
     },
-    "US5": {
-        "file": "US5_equipment_recovery_inventory.html",
+    "R1": {
+        "file": "R1_equipment_recovery_inventory.html",
         "title": "Equipment Recovery & Inventory",
+        "role": "Recovery",
         "visuals": [
             "Overall Dashboard",
             "KPI — Recovery Rate",
@@ -121,9 +126,10 @@ DASHBOARDS = {
             "Recovered Equipment Register",
         ],
     },
-    "US6": {
-        "file": "US6_recovery_forecasting.html",
+    "R2": {
+        "file": "R2_recovery_forecasting.html",
         "title": "Recovery Forecasting",
+        "role": "Recovery",
         "visuals": [
             "Overall Dashboard",
             "KPI — Forecast Removal Volume",
@@ -136,9 +142,10 @@ DASHBOARDS = {
             "Upcoming Removals — Project Pipeline",
         ],
     },
-    "US7": {
-        "file": "US7_qs_cost_validation.html",
+    "QS1": {
+        "file": "QS1_qs_cost_validation.html",
         "title": "QS Cost Validation",
+        "role": "QS",
         "visuals": [
             "Overall Dashboard",
             "KPI — Sites Over Threshold",
@@ -153,9 +160,10 @@ DASHBOARDS = {
             "Sites Exceeding Threshold",
         ],
     },
-    "US8": {
-        "file": "US8_transmission_planning.html",
+    "T1": {
+        "file": "T1_transmission_planning.html",
         "title": "Transmission Planning — Dish Rights & Feasibility",
+        "role": "Transmission",
         "visuals": [
             "Overall Dashboard",
             "KPI — Total Sites with Dish Rights",
@@ -510,7 +518,7 @@ if page == "View Dashboards":
         selected = st.selectbox(
             "Dashboard",
             list(DASHBOARDS.keys()),
-            format_func=lambda k: f"{k} — {DASHBOARDS[k]['title']}",
+            format_func=lambda k: f"{k} ({DASHBOARDS[k].get('role', '')}) — {DASHBOARDS[k]['title']}",
             label_visibility="collapsed",
         )
     with col_status:
