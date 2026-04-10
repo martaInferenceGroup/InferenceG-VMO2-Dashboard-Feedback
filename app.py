@@ -414,25 +414,20 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ─── Client Authentication Gate ─────────────────────────────────────────────────
-# Auth persists in browser sessionStorage so it survives page reloads
-# (e.g. after feedback submission). Only asks once per browser session.
+# Auth persists via URL parameter so it survives reloads (e.g. after feedback submit).
+# Only asks once per browser session. Closing the tab requires re-entry.
 
 try:
     client_pw = st.secrets["client_password"]
 except Exception:
     client_pw = "vmo2-client-2026"
 
-# Check browser sessionStorage for existing auth (survives reloads)
-browser_auth = streamlit_js_eval(
-    js_expressions="""(function(){
-        try { return window.parent.sessionStorage.getItem('vmo2_auth') || sessionStorage.getItem('vmo2_auth'); }
-        catch(e) { return sessionStorage.getItem('vmo2_auth'); }
-    })()""",
-    key="check_auth",
-)
+# Check if already authenticated via URL param (survives reloads)
+query_params = st.query_params
+is_authed = query_params.get("auth") == "1"
 
 if "client_auth" not in st.session_state:
-    st.session_state.client_auth = (browser_auth == "true")
+    st.session_state.client_auth = is_authed
 
 if not st.session_state.client_auth:
     st.markdown("""
@@ -450,15 +445,7 @@ if not st.session_state.client_auth:
         if st.button("Sign In", type="primary"):
             if pw_input == client_pw:
                 st.session_state.client_auth = True
-                # Persist to browser sessionStorage (survives reloads, clears when tab/browser closes)
-                streamlit_js_eval(
-                    js_expressions="""(function(){
-                        try { window.parent.sessionStorage.setItem('vmo2_auth', 'true'); }
-                        catch(e) { sessionStorage.setItem('vmo2_auth', 'true'); }
-                        return 'ok';
-                    })()""",
-                    key="set_auth",
-                )
+                st.query_params["auth"] = "1"
                 st.rerun()
             else:
                 st.error("Incorrect password.")
@@ -496,11 +483,14 @@ st.components.v1.html("""
                     p.sessionStorage.setItem('vmo2_pending_feedback', e.data.data);
                     p.sessionStorage.setItem('vmo2_feedback_submitted', 'true');
                 } catch(err) {
-                    // Fallback: store in this iframe's storage
                     sessionStorage.setItem('vmo2_pending_feedback', e.data.data);
                     sessionStorage.setItem('vmo2_feedback_submitted', 'true');
                 }
-                p.location.reload();
+                // Reload but preserve the auth param so user stays logged in
+                var url = new URL(p.location.href);
+                url.searchParams.set('auth', '1');
+                url.searchParams.set('fb', Date.now());
+                p.location.href = url.toString();
             }
         });
     }
